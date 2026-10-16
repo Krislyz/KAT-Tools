@@ -1,6 +1,6 @@
 schema_version = "1.0.0"
 id = "kat"
-version = "0.2.2"
+version = "0.3.0"
 name = "KAT Blender Plugin"
 tagline = "Avatar prep for VRChat and Unity, with version history"
 maintainer = "Krislyz"
@@ -12,3 +12,4 @@ tags = ["Import-Export", "Rigging", "Object"]
 
 [permissions]
 files = "Version history and Unity sidecar export"
+network = "Ask GitHub if a newer KAT is out, and download it when you press Update now"

@@ -17,6 +17,7 @@ D = SimpleNamespace(
     import_flat_view=True,
     import_find_textures=True,
     import_unity_sync=True,
+    check_updates=True,
 )
 
 
@@ -25,6 +26,8 @@ class KatPreferences(bpy.types.AddonPreferences):
 
     safe_mode: BoolProperty(name="Safe mode", default=D.safe_mode,
                             description="Turn off every background feature (version history and its watcher)")
+    check_updates: BoolProperty(name="Check for updates when Blender starts", default=D.check_updates,
+                                description="Ask GitHub once at startup whether a newer KAT is out. Needs Allow Online Access. Nothing is installed without you pressing Update now")
     history_enabled: BoolProperty(name="Version history", default=D.history_enabled)
     history_keep: IntProperty(name="Versions per file", default=D.history_keep, min=1, max=1000)
     history_max_gb: FloatProperty(name="Size limit (GB)", default=D.history_max_gb, min=0.1, max=500.0)
@@ -39,6 +42,7 @@ class KatPreferences(bpy.types.AddonPreferences):
     def draw(self, context):
         col = self.layout.column()
         col.prop(self, "safe_mode")
+        col.prop(self, "check_updates")
         box = col.box()
         box.label(text="Version history")
         for name in ("history_enabled", "history_keep", "history_max_gb", "history_max_file_mb"):

@@ -414,6 +414,7 @@ class KAT_PT_optimize_auto(OptimizePanel, bpy.types.Panel):
     bl_idname = "KAT_PT_optimize_auto"
     bl_order = 1060
     bl_parent_id = ""
+    bl_options = {"DEFAULT_CLOSED"}
 
     def draw_header(self, context):
         self.layout.label(icon="MOD_DECIM")

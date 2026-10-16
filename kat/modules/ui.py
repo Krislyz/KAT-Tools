@@ -56,6 +56,8 @@ class KAT_PT_main(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
+        from . import updater  # lazy: updater reads the version from this module
+        updater.draw_notice(layout)
         rig = armature.rig_of(context)
         row = layout.row(align=True)
         row.scale_y = 1.5

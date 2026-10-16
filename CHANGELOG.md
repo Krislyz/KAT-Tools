@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0 - 2026-10-17
+
+### Added
+- Blender: update checker. Each time Blender starts, KAT asks GitHub whether a newer version is out (needs Allow Online Access, can be turned off in Settings). An **Updates** panel shows the result, and **Update now** downloads and installs it. Nothing installs without you pressing it. Restart Blender afterwards.
+
+### Changed
+- Release files are named `kats-blender-plugin-vX.X.X.zip` and `kat-unity-plugin-vX.X.X.zip`.
+- The Optimize panel starts closed. Only Quick access, Updates and Credits start open.
+
 ## 0.2.2 - 2026-10-17
 
 ### Added

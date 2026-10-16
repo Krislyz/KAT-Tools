@@ -15,7 +15,7 @@ log = logging.getLogger("kat")
 # Each module exposes register()/unregister(); one failing module never blocks the rest.
 # Panel order in the sidebar follows this list.
 MODULES = ["options", "ui", "importer", "textures", "unitysync", "mesh", "armature", "optimize", "texopt", "reduce", "world", "outfits", "refit", "face", "custom",
-           "names", "materials", "atlas", "validate", "export", "history", "settings", "credits"]
+           "names", "materials", "atlas", "validate", "export", "history", "settings", "updater", "credits"]
 _loaded = []
 
 
