@@ -400,6 +400,7 @@ class KAT_PT_visemes(FacePanel, bpy.types.Panel):
     bl_idname = "KAT_PT_visemes"
     bl_parent_id = "KAT_PT_face"
     bl_order = 1041
+    bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, context):
@@ -442,6 +443,7 @@ class KAT_PT_eyes(FacePanel, bpy.types.Panel):
     bl_idname = "KAT_PT_eyes"
     bl_parent_id = "KAT_PT_face"
     bl_order = 1042
+    bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, context):
@@ -499,6 +501,7 @@ class KAT_PT_facetrack(FacePanel, bpy.types.Panel):
     bl_idname = "KAT_PT_facetrack"
     bl_parent_id = "KAT_PT_face"
     bl_order = 1043
+    bl_options = {"DEFAULT_CLOSED"}
 
     @classmethod
     def poll(cls, context):

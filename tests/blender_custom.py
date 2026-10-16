@@ -100,6 +100,47 @@ assert custom.merge_rigs(ctx, rig, fold, similar=True, keep_extra=False) == 0
 assert len(rig.data.bones) == count and "cape" not in rig.data.bones
 assert [g.name for g in cloak.vertex_groups] == ["mixamorig:Hips"], [g.name for g in cloak.vertex_groups]
 
+def outfit_rig(name, bones):
+    data = bpy.data.armatures.new(name)
+    ob = bpy.data.objects.new(name, data)
+    ctx.scene.collection.objects.link(ob)
+    ctx.view_layer.objects.active = ob
+    bpy.ops.object.mode_set(mode="EDIT")
+    for bone, parent, head, tail in bones:
+        eb = data.edit_bones.new(bone)
+        eb.head, eb.tail = head, tail
+        if parent:
+            eb.parent = data.edit_bones[parent]
+    bpy.ops.object.mode_set(mode="OBJECT")
+    skin = bpy.data.objects.new(name + "Skin", bpy.data.meshes.new(name + "Skin"))
+    ctx.scene.collection.objects.link(skin)
+    skin.data.from_pydata([(0, 0, 1.0)] * len(bones), [], [])
+    for i, (bone, *_) in enumerate(bones):
+        skin.vertex_groups.new(name=bone).add([i], 1.0, "REPLACE")
+    skin.modifiers.new("Armature", "ARMATURE").object = ob
+    return ob, skin
+
+
+# twist bones of an outfit go into the bone above when the avatar has none, and stay when asked; stray bones with
+# nothing matching above them go to the closest bone of the avatar
+rows = [("Hips", None, (0, 0, 1.0), (0, 0, 1.2)), ("sleeve_twist", "Hips", (0, 0, 1.2), (0, 0, 1.3)),
+        ("ruffle", "sleeve_twist", (0, 0, 1.3), (0, 0, 1.4)), ("stray", None, (0, 0, 1.69), (0, 0, 1.75))]
+count = len(rig.data.bones)
+w_rig, w_skin = outfit_rig("Twisty", rows)
+assert custom.merge_rigs(ctx, rig, w_rig, similar=True, keep_extra=True) == 2
+assert "sleeve_twist" not in rig.data.bones and "ruffle" in rig.data.bones and "stray" in rig.data.bones
+assert rig.data.bones["ruffle"].parent.name == "mixamorig:Hips"
+assert {g.name for g in w_skin.vertex_groups} == {"mixamorig:Hips", "ruffle", "stray"}
+rows_b = [(n if n == "Hips" else n + "_b", p if p is None or p == "Hips" else p + "_b", h, t) for n, p, h, t in rows]
+w_rig, w_skin = outfit_rig("Twisty2", rows_b)
+assert custom.merge_rigs(ctx, rig, w_rig, similar=True, keep_extra=True, keep_twist=True) == 3
+assert "sleeve_twist_b" in rig.data.bones
+rows_c = [(n if n == "Hips" else n + "_c", p if p is None or p == "Hips" else p + "_c", h, t) for n, p, h, t in rows]
+w_rig, w_skin = outfit_rig("Twisty3", rows_c)
+count = len(rig.data.bones)
+assert custom.merge_rigs(ctx, rig, w_rig, similar=True, keep_extra=False) == 0 and len(rig.data.bones) == count
+assert {g.name for g in w_skin.vertex_groups} == {"mixamorig:Hips", "stray"}, "the stray root went to the closest base bone"
+
 ghost = bpy.data.objects.new("Ghost", bpy.data.armatures.new("Ghost"))  # not in the scene
 for args in ((ghost, "nope"), (ghost, "")):
     try:

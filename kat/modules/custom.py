@@ -17,11 +17,12 @@ def merge_pairs(base, other):
 
 
 def merge_rigs(context, base, other, attach_to="", similar=False, keep_extra=True, apply=False, join=False,
-               drop_unused=False, clean_keys=False):
+               drop_unused=False, clean_keys=False, keep_twist=False):
     """Join `other` into `base`. Its root bones are parented to bone `attach_to` of `base` when given.
     With `similar`, the bones of `other` that match one of `base` (both have a Hips) are not added twice: their weights
     go to the base bone and what hung from them hangs from the base bone. `keep_extra` off folds the other bones of
-    `other` into the nearest matching one too. Returns the number of bones that came across."""
+    `other` into the nearest matching one too (the nearest base bone when none of their parents match). Twist bones of
+    `other` are folded the same way unless `keep_twist` is on or the base has twist bones of its own. Returns the number of bones that came across."""
     if attach_to and attach_to not in base.data.bones:
         raise ValueError(f"No bone called {attach_to} to attach to")
     if any(ob.name not in context.view_layer.objects for ob in (base, other)):
@@ -30,15 +31,20 @@ def merge_rigs(context, base, other, attach_to="", similar=False, keep_extra=Tru
         for rig in (base, other):
             mesh.apply_transforms(context, rig)
     targets = merge_pairs(base, other) if similar else {}
-    if targets and not keep_extra:
+    drop_twist = not keep_twist and not any("twist" in b.name.lower() for b in base.data.bones)
+    if targets and (not keep_extra or drop_twist):
+        deform = [b for b in base.data.bones if b.use_deform] or list(base.data.bones)
         for bone in other.data.bones:
-            if bone.name in targets:
+            if bone.name in targets or (keep_extra and not ("twist" in bone.name.lower() and drop_twist)):
                 continue
             up = bone.parent
             while up is not None and up.name not in targets:
                 up = up.parent
             if up is not None:
                 targets[bone.name] = targets[up.name]
+            else:  # nothing above it matches: the closest bone of the base takes its weights
+                here = other.matrix_world @ bone.head_local
+                targets[bone.name] = min(deform, key=lambda b: (base.matrix_world @ b.head_local - here).length_squared).name
     folded = {}  # temporary name -> the bone of the base it goes into
     taken = {b.name for b in base.data.bones}
     for bone in list(other.data.bones):  # clashing names would get .001 suffixes and break the vertex groups
@@ -152,9 +158,12 @@ class KAT_CustomSettings(bpy.types.PropertyGroup):
     similar: BoolProperty(name="Merge matching bones", default=True,
                           description="A bone that both armatures have (a Hips, a Head, equal names) is merged: the weights "
                                       "go to the base bone and what hung from it hangs from the base bone")
-    keep_extra: BoolProperty(name="Keep the extra bones", default=True,
+    keep_extra: BoolProperty(name="Keep the extra bones", default=False,
                              description="The other armature's bones that the base has no match for stay. Off, they are "
                                          "folded into the nearest matching bone and removed")
+    keep_twist: BoolProperty(name="Keep twist bones", default=False,
+                             description="Keep the other armature's twist bones even when the base has none. Off, they are "
+                                         "folded into the bone above them")
     apply: BoolProperty(name="Apply transforms", default=False,
                         description="Apply rotation and scale of both armatures and their meshes first, so they line up")
     join: BoolProperty(name="Join meshes", default=False, description="Join every mesh of the result into one")
@@ -190,7 +199,7 @@ class KAT_OT_merge_rigs(KatCustomOp, bpy.types.Operator):
         if base is None or not others:
             raise ValueError("Pick the base armature and the one to merge, or select both with the base active")
         moved = sum(merge_rigs(context, base, o, s.attach_to, similar=s.similar, keep_extra=s.keep_extra, apply=s.apply,
-                               join=s.join, drop_unused=s.drop_unused, clean_keys=s.clean_keys) for o in others)
+                               join=s.join, drop_unused=s.drop_unused, clean_keys=s.clean_keys, keep_twist=s.keep_twist) for o in others)
         self.report({"INFO"}, f"Merged {moved} bones into {base.name}")
         s.other = None
         return {"FINISHED"}
@@ -266,6 +275,7 @@ class KAT_PT_merge(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "KAT"
+    bl_options = {"DEFAULT_CLOSED"}
 
     def draw_header(self, context):
         self.layout.label(icon="AUTOMERGE_ON")
@@ -291,6 +301,7 @@ class KAT_PT_merge(bpy.types.Panel):
         sub = box.column()
         sub.enabled = s.similar
         sub.prop(s, "keep_extra")
+        sub.prop(s, "keep_twist")
         box.prop(s, "apply")
         box.prop(s, "join")
         box.prop(s, "drop_unused")
@@ -309,6 +320,7 @@ class KAT_PT_attach(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "KAT"
+    bl_options = {"DEFAULT_CLOSED"}
 
     def draw_header(self, context):
         self.layout.label(icon="MESH_DATA")

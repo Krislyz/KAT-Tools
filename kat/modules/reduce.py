@@ -500,6 +500,7 @@ class KAT_PT_reduce(bpy.types.Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "KAT"
+    bl_options = {"DEFAULT_CLOSED"}
 
     def draw_header(self, context):
         self.layout.label(icon="MOD_DECIM")

@@ -13,6 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import strict  # noqa: E402,F401
 
 import kat  # noqa: E402
+from kat.core import compat  # noqa: E402
 from kat.modules import armature, face, optimize, outfits  # noqa: E402
 
 kat.register()
@@ -80,9 +81,7 @@ assert "does_nothing" not in (face.key_blocks(target) or ()), "the empty key wen
 assert "Unused" not in target.vertex_groups
 
 # bone merging keeps every weight, hands children to the parent, never touches humanoid bones
-plan = optimize.merge_plan(rig, 0.5)
-assert plan == ["Hair2", "Hair4", "Hair6"], plan
-assert optimize.merge_plan(rig, 0.0) == [] and len(optimize.merge_plan(rig, 1.0)) == 6
+plan = ["Hair2", "Hair4", "Hair6"]
 
 
 def total_weight():
@@ -98,10 +97,9 @@ assert rig.data.bones["Hair3"].parent.name == "Hair1", "the child moved up to th
 assert all(b.parent is not None for b in rig.data.bones if b.name.startswith("Hair"))
 assert "Hair2" not in target.vertex_groups, "merged bones leave no empty group behind"
 
-# one chain at a time, weights to the active bone, bones kept, and the Delete box
-chains = optimize.merge_chains(rig)
+# weights to the active bone, bones kept, and the Delete box
+chains = optimize.loose_chains(rig)
 assert list(chains) == ["Hair1"], list(chains)
-assert optimize.merge_plan(rig, 1.0, "Hair1") == optimize.merge_plan(rig, 1.0) and optimize.merge_plan(rig, 1.0, "Nope") == []
 rig.data.bones.active = rig.data.bones["Hair1"]
 before = total_weight()
 assert optimize.merge_bones(bpy.context, rig, ["Hair3"], into="ACTIVE", keep=True) == 1
@@ -129,23 +127,57 @@ assert all(getattr(o, p) for p, _, _, _ in optimize.STEPS)
 assert reduce.settings(bpy.context).budget == "QUEST_GOOD" and o.tex_limit == "512" and o.platform == "QUEST"
 assert bpy.ops.kat.optimize_preset(kind="PC") == {"FINISHED"} and reduce.settings(bpy.context).budget == "GOOD" and o.platform == "PC"
 
-# the Chain menu: Blender asks for its items at odd moments, so the callback only returns a list that exists, and a list
-# that gets replaced stays alive (Blender keeps reading the strings of the old one)
-import gc  # noqa: E402
-from kat.modules import options  # noqa: E402
+# merge the selected bones into their parents (what the panel button does), in Object mode and in Edit mode
 bpy.context.view_layer.objects.active = rig
-before = options.chain_items()
-assert before[0][0] == "ALL"
-options.refresh_chains(bpy.context)
-after = options.chain_items()
-assert any(i[0] != "ALL" for i in after), "the hair chain of the test rig is listed"
-assert before is after or before in options._replaced, "a replaced list is kept alive"
-for _ in range(50):
-    o.opt_merge_chain = after[-1][0]
-    gc.collect()
-    assert o.opt_merge_chain == after[-1][0]
-    options.refresh_chains(bpy.context)
-assert len(options._replaced) <= 256
+compat.select_bones(rig, ["Hair5"])
+before = total_weight()
+assert bpy.ops.kat.merge_bones() == {"FINISHED"}
+assert "Hair5" not in rig.data.bones and total_weight() == before
+rig.data.bones.active = rig.data.bones["Hair1"]  # the active bone is merged too, it is not the target
+compat.select_bones(rig, ["Hair1"])
+assert bpy.ops.kat.merge_bones() == {"FINISHED"} and "Hair1" not in rig.data.bones and total_weight() == before
+compat.select_bones(rig, ["Hips"])
+try:
+    bpy.ops.kat.merge_bones()
+except RuntimeError:
+    pass
+else:
+    raise AssertionError("a bone without a parent cannot merge")
+
+# roots for groups of loose bones: skirt_222_2201.. under Hips become one chain-group under skirt_root_222_22
+bpy.ops.object.mode_set(mode="EDIT")
+for i in (1, 2, 3):
+    eb = rig.data.edit_bones.new(f"skirt_222_220{i}")
+    eb.head, eb.tail = (0.1 * i, 0, 0.9), (0.1 * i, 0, 0.7)
+    eb.parent = rig.data.edit_bones["Hips"]
+    sub = rig.data.edit_bones.new(f"skirt_222_220{i}_end")
+    sub.head, sub.tail = eb.tail, (0.1 * i, 0, 0.5)
+    sub.parent = eb
+eb = rig.data.edit_bones.new("tail_1")  # alone under Hips: no group
+eb.head, eb.tail = (0, 0.1, 0.9), (0, 0.1, 0.7)
+eb.parent = rig.data.edit_bones["Hips"]
+bpy.ops.object.mode_set(mode="OBJECT")
+for name in [f"skirt_222_220{i}" for i in (1, 2, 3)] + ["tail_1"]:
+    target.vertex_groups.new(name=name)  # a mesh weighted to them, so they count as deform bones
+assert optimize.category_name(["skirt_222_2201", "skirt_222_2202", "skirt_222_2210"]) == "skirt_root_222_22"
+assert optimize.category_name(["hair_a", "hair_b"]) == "hair_root"
+found = optimize.categories(rig)
+assert [(n, p, len(t)) for n, p, t in found] == [("skirt_root_222_220", "Hips", 3)], found
+before = total_weight()
+assert bpy.ops.kat.group_bones() == {"FINISHED"}
+root = rig.data.bones["skirt_root_222_220"]
+assert root.parent.name == "Hips" and not root.use_deform
+assert all(rig.data.bones[f"skirt_222_220{i}"].parent == root for i in (1, 2, 3))
+assert rig.data.bones["skirt_222_2201_end"].parent.name == "skirt_222_2201"
+assert total_weight() == before and optimize.categories(rig) == [], "a second run finds nothing new"
+
+# the same from Edit mode: the selection there is the edit bones', and the armature is left in Edit mode
+bpy.ops.object.mode_set(mode="EDIT")
+for eb in rig.data.edit_bones:
+    eb.select = eb.name == "skirt_222_2203_end"
+assert bpy.ops.kat.merge_bones() == {"FINISHED"}
+assert rig.mode == "EDIT" and "skirt_222_2203_end" not in rig.data.edit_bones
+bpy.ops.object.mode_set(mode="OBJECT")
 
 kat.unregister()
 print("OPTIMIZE OK")

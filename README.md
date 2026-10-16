@@ -75,7 +75,7 @@ The panels follow the order you work in.
 | Custom avatar | Merge armatures (matching bones become one), attach meshes |
 | Face | Pick the face mesh. Inside: Visemes, Blink & Eyes, Face tracking |
 | Outfits | The skin and the clothes, in layers. Inside: Refit clothes, Fit shapes |
-| Optimize | The one-click checklist. Inside: Join & weld, Materials & atlas, Textures (find missing, sync from Unity), Reduce triangles, Bone merging |
+| Optimize | The one-click checklist. Inside: Join & weld, Materials & atlas, Textures (find missing, sync from Unity), Reduce triangles, Bone merging (merge to parent, roots for loose bones) |
 | Check | The VRChat rank for PC or Quest |
 | World | Scan, combine, collision, LODs, lightmap UVs. Inside: Props |
 | Version history | Every import and export, restorable |

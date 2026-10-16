@@ -2,15 +2,18 @@
 # Copyright (C) 2026 Krislyz
 """Optimization: a checklist of safe clean-ups with what each would do, mesh joining that leaves the outfits
 alone (so clothes can still toggle in Unity), bone merging, and the material tools."""
+import os
+import re
+
 import bpy
 from bpy.props import FloatProperty
+from mathutils import Vector
 
 from ..core.safe import operator_guard
-from ..core import vrc
+from ..core import compat, vrc
 from . import armature, atlas, face, materials, mesh, options, outfits, reduce, texopt, uiutil, validate
 
 found = {"rig": None, "counts": {}, "joinable": []}  # the last scan, shown beside the checkboxes
-_plan_cache = {"key": None, "value": []}
 
 STEPS = (  # (option, label, key in the scan, icon)
     ("opt_keys", "Empty shape keys", "keys", "SHAPEKEY_DATA"),
@@ -143,7 +146,7 @@ def optimize(context, rig, o):
 
 # ---- bone merging -----------------------------------------------------------------------------------------------
 
-def merge_chains(rig):
+def loose_chains(rig):
     """{top bone: [bones]}: the loose chains (hair, tails, skirts, ears). Humanoid bones and bones that constraints,
     drivers or other bones refer to are never part of one."""
     best, _ = armature.cached_map(rig)
@@ -160,21 +163,58 @@ def merge_chains(rig):
     return chains
 
 
-def merge_plan(rig, ratio, chain="ALL"):
-    """Bones to fold into their parents: the loose chains thinned to roughly `ratio`, or just the one called `chain`."""
-    key = (rig.name, tuple(b.name for b in rig.data.bones), round(ratio, 3), chain)
-    if _plan_cache["key"] == key:
-        return _plan_cache["value"]
-    plan = []
-    for top, chain_bones in merge_chains(rig).items():
-        if chain not in ("ALL", "") and top != chain:
+SEPARATORS = re.compile(r"[_.\-\s]+")
+
+
+def category_name(names):
+    """['skirt_222_2201', 'skirt_222_2202', ...] -> 'skirt_root_222_22': what they share, with root after the first word."""
+    parts = SEPARATORS.split(os.path.commonprefix(names).rstrip("_.- "), 1)
+    first = parts[0] or SEPARATORS.split(names[0], 1)[0]
+    return f"{first}_root" + (f"_{parts[1]}" if len(parts) > 1 and parts[1] else "")
+
+
+def categories(rig):
+    """[(root name, parent name, [top bones])]: loose chains that start on the same bone and share the first word of their
+    name (skirt_*, hair_*) get one root between them and that bone. Chains that already hang off such a root are left."""
+    groups = {}
+    for top in loose_chains(rig):
+        word = re.match(r"[A-Za-z]+", top.lstrip("_.- "))
+        groups.setdefault((rig.data.bones[top].parent.name, word.group().lower() if word else ""), []).append(top)
+    taken = {b.name for b in rig.data.bones}
+    out = []
+    for (parent, _), tops in groups.items():
+        if len(tops) < 2:
             continue
-        chain_bones.sort(key=lambda b: len(b.parent_recursive))
-        for i, b in enumerate(chain_bones):
-            if int((i + 1) * ratio) > int(i * ratio):  # spreads the merges evenly along the chain
-                plan.append(b.name)
-    _plan_cache.update(key=key, value=plan)
-    return plan
+        name = category_name(sorted(tops))
+        if "_root" in parent and parent.split("_root")[0] == name.split("_root")[0]:
+            continue
+        base, n = name, 1
+        while name in taken:
+            name = f"{base}.{n:03d}"
+            n += 1
+        taken.add(name)
+        out.append((name, parent, sorted(tops)))
+    return sorted(out)
+
+
+def make_categories(context, rig, groups):
+    """Add each root (at the middle of its chains' first bones, standing up) and hang the chains on it. Weights stay."""
+    armature.check_ready(context, rig)
+
+    def action(edit, _):
+        for name, parent, tops in groups:
+            heads = [edit[t].head.copy() for t in tops]
+            length = max(sum(edit[t].length for t in tops) / len(tops) * 0.5, 0.01)
+            root = edit.new(name)
+            root.head = sum(heads, Vector()) / len(heads)
+            root.tail = root.head + Vector((0, 0, length))
+            root.parent = edit[parent]
+            root.use_deform = False
+            for t in tops:
+                edit[t].parent = root
+                edit[t].use_connect = False
+    armature.edit_bones(context, rig, [], action)
+    return len(groups)
 
 
 def merge_bones(context, rig, names, into="PARENT", keep=False, visible=False):
@@ -183,7 +223,7 @@ def merge_bones(context, rig, names, into="PARENT", keep=False, visible=False):
     armature.check_ready(context, rig)
     meshes = [m for m in armature.meshes_of(rig) if not visible or m.visible_get()]
     bones = rig.data.bones
-    active = bones.active.name if bones.active is not None else ""
+    active = bones.active.name if bones.active is not None and into == "ACTIVE" else ""
     if into == "ACTIVE" and not active:
         raise ValueError("Select the bone the weights should go to (it becomes the active bone)")
     doomed = sorted((n for n in names if n in bones and n != active), key=lambda n: -len(bones[n].parent_recursive))
@@ -324,8 +364,38 @@ class KAT_OT_weld(bpy.types.Operator):
 
 class KAT_OT_merge_bones(bpy.types.Operator):
     bl_idname = "kat.merge_bones"
-    bl_label = "Merge bones"
-    bl_description = "Fold a share of the loose bones (hair, tails, skirts) into their parents. Weights move with them"
+    bl_label = "Merge to parent"
+    bl_description = "Move the weights of the selected bones (Edit or Pose mode) to their parents and delete them"
+    bl_options = {"REGISTER", "UNDO"}
+    stays_in_edit = True  # it reads the Edit mode selection, then returns to Edit mode
+
+    @operator_guard
+    def execute(self, context):
+        rig = armature.rig_of(context)
+        if rig is None:
+            raise ValueError("Select an armature, or a mesh rigged to one")
+        editing = rig.mode == "EDIT"
+        names = compat.selected_bones(rig)
+        if editing:  # the bones' parents and the weights are read in Object mode
+            bpy.ops.object.mode_set(mode="OBJECT")
+        try:
+            bones = rig.data.bones
+            todo = [n for n in names if n in bones and bones[n].parent is not None]
+            if not todo:
+                raise ValueError("Select the bones to merge in Edit or Pose mode. A bone without a parent can't be merged")
+            done = merge_bones(context, rig, todo)
+        finally:
+            if editing:
+                bpy.ops.object.mode_set(mode="EDIT")
+        self.report({"INFO"}, f"Merged {done} bones into their parents")
+        return {"FINISHED"}
+
+
+class KAT_OT_group_bones(bpy.types.Operator):
+    bl_idname = "kat.group_bones"
+    bl_label = "Create roots"
+    bl_description = ("Give loose bones that start on the same bone and are named alike (a skirt, hair) one root bone of their "
+                      "own, named after them: skirt_222_2201, skirt_222_2202 get skirt_root_222_22. Weights stay as they are")
     bl_options = {"REGISTER", "UNDO"}
 
     @operator_guard
@@ -333,12 +403,11 @@ class KAT_OT_merge_bones(bpy.types.Operator):
         rig = armature.rig_of(context)
         if rig is None:
             raise ValueError("Select an armature, or a mesh rigged to one")
-        o = context.scene.kat
-        plan = merge_plan(rig, o.opt_merge_ratio, o.opt_merge_chain)
-        if not plan:
-            raise ValueError("No loose bones to merge")
-        done = merge_bones(context, rig, plan, o.opt_merge_into, o.opt_merge_keep, o.opt_merge_visible)
-        self.report({"INFO"}, f"Merged {done} bones")
+        groups = categories(rig)
+        if not groups:
+            raise ValueError("No group of loose bones with the same parent and a similar name")
+        make_categories(context, rig, groups)
+        self.report({"INFO"}, "Created " + ", ".join(g[0] for g in groups[:6]) + (" ..." if len(groups) > 6 else ""))
         return {"FINISHED"}
 
 
@@ -464,6 +533,7 @@ class KAT_PT_optimize_meshes(OptimizePanel, bpy.types.Panel):
     bl_label = "Join & weld"
     bl_idname = "KAT_PT_optimize_meshes"
     bl_order = 1031
+    bl_options = {"DEFAULT_CLOSED"}
 
     def draw_header(self, context):
         self.layout.label(icon="MESH_DATA")
@@ -480,6 +550,7 @@ class KAT_PT_optimize_materials(OptimizePanel, bpy.types.Panel):
     bl_label = "Materials & atlas"
     bl_idname = "KAT_PT_optimize_materials"
     bl_order = 1032
+    bl_options = {"DEFAULT_CLOSED"}
 
     def draw_header(self, context):
         self.layout.label(icon="MATERIAL")
@@ -507,6 +578,7 @@ class KAT_PT_optimize_bones(OptimizePanel, bpy.types.Panel):
     bl_label = "Bone merging"
     bl_idname = "KAT_PT_optimize_bones"
     bl_order = 1036
+    bl_options = {"DEFAULT_CLOSED"}
 
     def draw_header(self, context):
         self.layout.label(icon="BONE_DATA")
@@ -516,21 +588,28 @@ class KAT_PT_optimize_bones(OptimizePanel, bpy.types.Panel):
         layout = self.layout
         rig = armature.rig_of(context)
         box = layout.box()
-        box.label(text="Merge", icon="AUTOMERGE_ON")
-        options.refresh_chains(context)
-        box.prop(o, "opt_merge_chain", text="Chain")
-        box.prop(o, "opt_merge_ratio", slider=True)
-        if rig is not None:
-            total = len(merge_plan(rig, 1.0, o.opt_merge_chain))
-            box.label(text=f"{len(merge_plan(rig, o.opt_merge_ratio, o.opt_merge_chain))} of {total} loose bones would merge",
-                      icon="INFO")
-        box.row().prop(o, "opt_merge_into", expand=True)
-        box.prop(o, "opt_merge_keep")
-        box.prop(o, "opt_merge_visible")
+        box.label(text="Merge to parent", icon="AUTOMERGE_ON")
+        uiutil.paragraph(box, context, "Select bones in Edit or Pose mode. Their weights go to the parent and the bones are deleted.", "INFO")
+        picked = len(compat.selected_bones(rig)) if rig is not None else 0
+        box.label(text=f"{picked} bones selected")
         row = box.row()
         row.scale_y = 1.2
-        row.enabled = rig is not None
+        row.enabled = picked > 0
         row.operator("kat.merge_bones", icon="AUTOMERGE_ON")
+        box = layout.box()
+        box.label(text="Roots for loose bones", icon="GROUP_BONE")
+        groups = categories(rig) if rig is not None and rig.mode != "EDIT" else []
+        if groups:
+            for name, _, tops in groups[:5]:
+                box.label(text=f"{name} ({len(tops)} chains)", icon="BONE_DATA")
+            if len(groups) > 5:
+                box.label(text=f"and {len(groups) - 5} more")
+        else:
+            uiutil.paragraph(box, context, "Nothing to group (or the armature is in Edit mode).", "INFO")
+        row = box.row()
+        row.scale_y = 1.2
+        row.enabled = bool(groups)
+        row.operator("kat.group_bones", icon="GROUP_BONE")
         box = layout.box()
         box.label(text="Delete", icon="TRASH")
         col = box.column(align=True)
@@ -548,7 +627,7 @@ class KAT_PT_optimize_bones(OptimizePanel, bpy.types.Panel):
         row.operator("kat.bones_connect", icon="CONSTRAINT_BONE")
 
 
-classes = (KAT_OT_optimize_scan, KAT_OT_optimize_preset, KAT_OT_optimize, KAT_OT_join_selected, KAT_OT_weld, KAT_OT_merge_bones,
+classes = (KAT_OT_optimize_scan, KAT_OT_optimize_preset, KAT_OT_optimize, KAT_OT_join_selected, KAT_OT_weld, KAT_OT_merge_bones, KAT_OT_group_bones,
            KAT_OT_bones_clean, KAT_OT_bones_connect,
            KAT_PT_optimize_auto, KAT_PT_optimize_meshes, KAT_PT_optimize_materials,
            KAT_PT_optimize_bones)

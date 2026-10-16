@@ -8,31 +8,6 @@ from ..core import visemes
 from . import armature
 
 
-_chains = [("ALL", "All loose bones", "Thin every chain")]
-_replaced = []  # Blender keeps reading the strings of a list after it has been replaced: they must outlive it
-
-
-def chain_items():
-    """What the Chain menu shows. Blender asks for this at odd moments (a file loading, a property being read), so it only
-    hands back a list that already exists. The panel refreshes the list when it is drawn."""
-    return _chains
-
-
-def refresh_chains(context):
-    """The chains of loose bones of the rig, for the Chain menu."""
-    global _chains
-    from . import optimize
-    rig = armature.rig_of(context)
-    items = [("ALL", "All loose bones", "Thin every chain")]
-    if rig is not None:
-        for top, bones in optimize.merge_chains(rig).items():
-            items.append((top, f"{top} ({len(bones)} bones)", ""))
-    if items != _chains:
-        _replaced.append(_chains)
-        del _replaced[:-256]
-        _chains = items
-
-
 def _is_mesh(self, ob):
     return ob.type == "MESH"
 
@@ -90,17 +65,6 @@ class KAT_Options(bpy.types.PropertyGroup):
     opt_triangles: BoolProperty(name="Reduce triangles", default=False, description="Cut triangles on the meshes Reduce triangles would pick, to the chosen budget")
     opt_textures: BoolProperty(name="Shrink textures", default=False, description="Make smaller copies of textures above the largest size")
     opt_atlas: BoolProperty(name="Combine materials", default=False, description="Pack materials into atlases")
-    opt_merge_ratio: FloatProperty(name="Merge ratio", default=0.5, min=0.0, max=1.0, subtype="FACTOR",
-                                   description="Share of the loose bones (hair, tails, skirts) to fold into their parents")
-    opt_merge_chain: EnumProperty(name="Chain", items=lambda self, context: chain_items(),
-                                  description="Which loose chain of bones to thin out: all of them, or one (an ear, a tail)")
-    opt_merge_into: EnumProperty(name="Weights go to", items=[("PARENT", "Parents", "Each bone's weights move to its parent"),
-                                                              ("ACTIVE", "Active bone", "All the weights move to the active bone")],
-                                 default="PARENT")
-    opt_merge_keep: BoolProperty(name="Keep merged bones", default=False,
-                                 description="Move the weights but leave the bones where they are")
-    opt_merge_visible: BoolProperty(name="Visible meshes only", default=False,
-                                    description="Only the weights on meshes you can see are moved")
     opt_del_bones: BoolProperty(name="Bones without weights", default=False,
                                 description="Delete bones nothing uses: no weights, not humanoid, no constraints, drivers or parented objects")
     opt_del_constraints: BoolProperty(name="Constraints", default=False, description="Remove the constraints from the bones")

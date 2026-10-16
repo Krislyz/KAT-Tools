@@ -6,6 +6,9 @@
 - Blender: update checker. Each time Blender starts, KAT asks GitHub whether a newer version is out (needs Allow Online Access, can be turned off in Settings). An **Updates** panel shows the result, and **Update now** downloads and installs it. Nothing installs without you pressing it. Restart Blender afterwards.
 
 ### Changed
+- Bone merging has two tools. **Merge to parent**: select bones in Edit or Pose mode, their weights go to the parent and the bones are deleted. **Roots for loose bones**: loose bones that start on the same bone and are named alike (a skirt, hair) get one root bone, named after them (`skirt_222_2201`, `skirt_222_2202` get `skirt_root_222_22`). The old merge ratio and chain menu are gone.
+- Merge armatures: the other armature's stray bones are folded into the matching bone above them (the closest bone of the avatar when nothing above matches) by default, and its twist bones are dropped when the avatar has none. **Keep the extra bones** and **Keep twist bones** turn that off.
+- Every panel starts closed, except Updates and Credits. Panels no longer open with their parent.
 - Release files are named `katt-blender-plugin-vX.X.X.zip` and `katt-unity-plugin-vX.X.X.zip`.
 - The Optimize panel starts closed. Only Quick access, Updates and Credits start open.
 

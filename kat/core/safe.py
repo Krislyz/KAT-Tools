@@ -36,13 +36,14 @@ def invoke_guard(fn):
 
 def operator_guard(fn):
     """For Operator.execute: leave Edit mode first, and turn failures into a message, not a traceback.
-    ValueError is our own "that can't be done, here is why" and is shown as written."""
+    ValueError is our own "that can't be done, here is why" and is shown as written. An operator with `stays_in_edit`
+    handles the mode itself."""
     @functools.wraps(fn)
     def wrapper(self, context):
         import bpy
         try:
             active = context.active_object
-            if active is not None and active.mode != "OBJECT":
+            if active is not None and active.mode != "OBJECT" and not getattr(self, "stays_in_edit", False):
                 bpy.ops.object.mode_set(mode="OBJECT")
             return fn(self, context)
         except ValueError as err:
