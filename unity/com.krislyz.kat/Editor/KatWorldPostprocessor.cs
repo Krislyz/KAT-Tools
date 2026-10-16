@@ -83,16 +83,14 @@ namespace KAT
             }
         }
 
-        [MenuItem("KAT/World/Make selection static")]
-        static void MakeSelectionStatic()
+        public static void MakeSelectionStatic()
         {
             foreach (GameObject go in Selection.gameObjects)
                 GameObjectUtility.SetStaticEditorFlags(go, StaticFlags);
             Debug.Log($"KAT: {Selection.gameObjects.Length} objects are static now");
         }
 
-        [MenuItem("KAT/World/Bake occlusion culling")]
-        static void BakeOcclusion()
+        public static void BakeOcclusion()
         {
             if (StaticOcclusionCulling.Compute())
                 Debug.Log("KAT: occlusion culling baked");
@@ -100,8 +98,7 @@ namespace KAT
                 Debug.LogWarning("KAT: occlusion culling could not be baked. Mark the scenery static first");
         }
 
-        [MenuItem("KAT/World/Report scene cost")]
-        static void Report()
+        public static void Report()
         {
             var renderers = Object.FindObjectsOfType<MeshRenderer>();
             long tris = renderers.Select(r => r.GetComponent<MeshFilter>()).Where(f => f != null && f.sharedMesh != null)

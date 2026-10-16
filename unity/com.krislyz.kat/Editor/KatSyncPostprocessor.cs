@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace KAT
 {
-    /// <summary>Keeps Blender and Unity pointing at the same textures. See KAT > Sync in the menu.</summary>
+    /// <summary>Keeps Blender and Unity pointing at the same textures. The KAT panel has the buttons.</summary>
     public class KatSyncPostprocessor : AssetPostprocessor
     {
         const string AutoKey = "KAT.AutoSync";
@@ -67,8 +67,7 @@ namespace KAT
         /// <summary>Right-click a model, a prefab or an object: write what Blender needs to show it as it looks here.</summary>
         [MenuItem("Assets/KAT/Send to Blender", false, 2000)]
         [MenuItem("GameObject/KAT/Send to Blender", false, 2000)]
-        [MenuItem("KAT/Sync/Send selection to Blender")]
-        static void SendMenu()
+        public static void SendMenu()
         {
             var models = KatUnitySync.WriteSelected();
             if (models.Count == 0)
@@ -81,8 +80,7 @@ namespace KAT
 
         [MenuItem("Assets/KAT/Send to Blender", true)]
         [MenuItem("GameObject/KAT/Send to Blender", true)]
-        [MenuItem("KAT/Sync/Send selection to Blender", true)]
-        static bool SendCheck()
+        public static bool SendCheck()
         {
             foreach (Object picked in Selection.objects)
                 if (picked is GameObject || KatUnitySync.IsModel(AssetDatabase.GetAssetPath(picked)))
@@ -90,15 +88,13 @@ namespace KAT
             return false;
         }
 
-        [MenuItem("KAT/Sync/Write all for Blender")]
-        static void WriteMenu()
+        public static void WriteMenu()
         {
             int n = KatUnitySync.WriteAll();
             Debug.Log($"KAT: updated {n} sync file(s) for the models that have a .kat.json.");
         }
 
-        [MenuItem("KAT/Sync/Make materials from Blender's textures")]
-        static void ApplyMenu()
+        public static void ApplyMenu()
         {
             int total = 0;
             foreach (Object selected in Selection.objects)
@@ -110,24 +106,5 @@ namespace KAT
             Debug.Log($"KAT: made {total} material(s). Select model files (.fbx that have a .kat.json) first.");
         }
 
-        [MenuItem("KAT/Sync/Make materials automatically")]
-        static void ToggleAuto() { Auto = !Auto; }
-
-        [MenuItem("KAT/Sync/Make materials automatically", true)]
-        static bool ToggleAutoCheck()
-        {
-            Menu.SetChecked("KAT/Sync/Make materials automatically", Auto);
-            return true;
-        }
-
-        [MenuItem("KAT/Sync/Write for Blender automatically")]
-        static void ToggleAutoWrite() { AutoWrite = !AutoWrite; }
-
-        [MenuItem("KAT/Sync/Write for Blender automatically", true)]
-        static bool ToggleAutoWriteCheck()
-        {
-            Menu.SetChecked("KAT/Sync/Write for Blender automatically", AutoWrite);
-            return true;
-        }
     }
 }

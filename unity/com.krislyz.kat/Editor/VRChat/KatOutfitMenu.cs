@@ -22,8 +22,15 @@ namespace KAT
         const string MenuName = "Outfits";
         const int MenuLimit = 8; // a VRChat menu holds eight controls
 
-        [MenuItem("KAT/Set up outfit toggles")]
-        static void Setup()
+        [InitializeOnLoadMethod]
+        static void Register()
+        {
+            KatPanel.Register("Avatar", "Set up outfit toggles",
+                "Builds one toggle per outfit (from the Outfits panel in Blender) in the avatar's FX layer, parameters and menu. Run it again after changing the outfits.",
+                CanSetup, Setup);
+        }
+
+        public static void Setup()
         {
             GameObject root = Selection.activeGameObject;
             string model = KatAvatarSetup.SourceModelPath(root);
@@ -55,8 +62,7 @@ namespace KAT
             Debug.Log($"KAT: {root.name}: {made.parameters.Count} outfit toggles ready{skipped}");
         }
 
-        [MenuItem("KAT/Set up outfit toggles", true)]
-        static bool CanSetup()
+        public static bool CanSetup()
         {
             GameObject root = Selection.activeGameObject;
             return root != null && !EditorUtility.IsPersistent(root) && root.GetComponentInChildren<SkinnedMeshRenderer>(true) != null;

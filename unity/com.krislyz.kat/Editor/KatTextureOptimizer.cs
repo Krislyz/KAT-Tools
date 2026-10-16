@@ -85,8 +85,7 @@ namespace KAT
             return result;
         }
 
-        [MenuItem("KAT/Optimize/Textures of selection")]
-        static void Run()
+        public static void Run()
         {
             List<string> paths = Collect(Selection.objects);
             if (paths.Count == 0)
@@ -98,8 +97,7 @@ namespace KAT
             Debug.Log($"KAT: {r.changed} of {r.total} textures changed, about {r.before / 1048576f:F0} MB to {r.after / 1048576f:F0} MB in memory");
         }
 
-        [MenuItem("KAT/Optimize/Textures of selection", true)]
-        static bool CanRun()
+        public static bool CanRun()
         {
             return Selection.objects.Length > 0;
         }

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0 - 2026-10-16
+
+### Added
+- Unity: the KAT panel. **KAT > KAT Panel** opens one window with tabs (Avatar, Sync, Optimize, World, Settings), like the VRChat SDK control panel. The avatar to work on is picked at the top, or follows your selection. The VRChat tools (Set up VRChat avatar, Set up outfit toggles, VRChat pickup) appear in it when the VRChat SDK is in the project.
+
+### Updated
+- Unity: the long KAT menu is gone. Its buttons are in the panel. Right-click **KAT > Send to Blender** stays.
+
 ## 0.1.1 - 2026-10-16
 
 ### Fixed

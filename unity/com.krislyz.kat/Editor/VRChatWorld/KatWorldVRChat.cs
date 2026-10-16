@@ -9,8 +9,14 @@ namespace KAT
     /// <summary>The VRChat side of world props: KAT > World > Add VRChat pickup gives the selected props a VRC_Pickup.</summary>
     public static class KatWorldVRChat
     {
-        [MenuItem("KAT/World/Add VRChat pickup to selection")]
-        static void AddPickups()
+        [InitializeOnLoadMethod]
+        static void Register()
+        {
+            KatPanel.Register("World", "Add VRChat pickup to selection",
+                "Gives the selected props a Rigidbody, a collider and a VRC_Pickup.", () => Selection.gameObjects.Length > 0, AddPickups);
+        }
+
+        public static void AddPickups()
         {
             int added = 0;
             foreach (GameObject go in Selection.gameObjects)

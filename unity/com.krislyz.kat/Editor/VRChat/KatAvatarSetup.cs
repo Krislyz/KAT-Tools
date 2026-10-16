@@ -16,8 +16,14 @@ namespace KAT
             "sil", "pp", "ff", "th", "dd", "kk", "ch", "ss", "nn", "rr", "aa", "e", "ih", "oh", "ou"
         };
 
-        [MenuItem("KAT/Set up VRChat avatar")]
-        static void Setup()
+        [InitializeOnLoadMethod]
+        static void Register()
+        {
+            KatPanel.Register("Avatar", "Set up VRChat avatar",
+                "Adds the avatar descriptor, the view position and the lip sync visemes from the model's .kat.json.", CanSetup, Setup);
+        }
+
+        public static void Setup()
         {
             GameObject root = Selection.activeGameObject;
             Animator animator = root.GetComponent<Animator>();
@@ -38,8 +44,7 @@ namespace KAT
             Debug.Log($"KAT: {root.name}: {note}");
         }
 
-        [MenuItem("KAT/Set up VRChat avatar", true)]
-        static bool CanSetup()
+        public static bool CanSetup()
         {
             GameObject root = Selection.activeGameObject;
             if (root == null || EditorUtility.IsPersistent(root))
