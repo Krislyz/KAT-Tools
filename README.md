@@ -36,7 +36,7 @@ Made for Blender 5.0 and newer. Tested on 5.0, 5.1 and 5.2.
 
 ## Install in Blender
 
-1. Download `kat-0.2.0.zip` from the [releases](https://github.com/Krislyz/KAT-Tools/releases).
+1. Download `kat-0.2.1.zip` from the [releases](https://github.com/Krislyz/KAT-Tools/releases).
    **Do not extract it.** Blender wants the zip.
 2. In Blender open **Edit > Preferences > Get Extensions**.
 3. Open the small arrow at the top right and pick **Install from Disk...**

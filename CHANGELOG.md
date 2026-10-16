@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1 - 2026-10-16
+
+### Updated
+- Unity: the KAT panel looks like KAT now: a deep navy banner and a navy list of pages down the left side, instead of a bright blue banner with a row of tabs.
+
 ## 0.2.0 - 2026-10-16
 
 ### Added

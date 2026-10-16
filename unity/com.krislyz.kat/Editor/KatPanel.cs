@@ -43,7 +43,7 @@ namespace KAT
         public static void Open()
         {
             var window = GetWindow<KatPanel>("KAT");
-            window.minSize = new Vector2(360, 420);
+            window.minSize = new Vector2(380, 420);
             window.Show();
         }
 
@@ -64,8 +64,45 @@ namespace KAT
         {
             DrawHeader();
             DrawAvatarField();
-            tab = GUILayout.Toolbar(tab, Tabs, GUILayout.Height(24));
-            EditorGUILayout.Space(4);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                DrawNav();
+                using (new EditorGUILayout.VerticalScope())
+                    DrawPage();
+            }
+        }
+
+        /// <summary>The list of pages down the left side.</summary>
+        void DrawNav()
+        {
+            Rect rail = EditorGUILayout.BeginVertical(GUILayout.Width(92));
+            EditorGUI.DrawRect(new Rect(rail.x, rail.y, rail.width, Mathf.Max(rail.height, position.height)), new Color(0.09f, 0.12f, 0.2f));
+            for (int i = 0; i < Tabs.Length; i++)
+            {
+                Rect b = GUILayoutUtility.GetRect(92, 30);
+                bool on = tab == i;
+                if (on)
+                {
+                    EditorGUI.DrawRect(b, new Color(0.16f, 0.24f, 0.4f));
+                    EditorGUI.DrawRect(new Rect(b.x, b.y, 3, b.height), new Color(0.45f, 0.65f, 1f));
+                }
+                var style = new GUIStyle(EditorStyles.label) { alignment = TextAnchor.MiddleLeft, padding = new RectOffset(12, 4, 0, 0), fontStyle = on ? FontStyle.Bold : FontStyle.Normal };
+                style.normal.textColor = on ? Color.white : new Color(0.7f, 0.76f, 0.88f);
+                GUI.Label(b, Tabs[i], style);
+                if (Event.current.type == EventType.MouseDown && b.Contains(Event.current.mousePosition))
+                {
+                    tab = i;
+                    scroll = Vector2.zero;
+                    Event.current.Use();
+                    Repaint();
+                }
+            }
+            EditorGUILayout.EndVertical();
+            GUILayout.Space(6);
+        }
+
+        void DrawPage()
+        {
             scroll = EditorGUILayout.BeginScrollView(scroll);
             switch (Tabs[tab])
             {
@@ -92,15 +129,16 @@ namespace KAT
 
         void DrawHeader()
         {
-            Rect r = GUILayoutUtility.GetRect(0, 54, GUILayout.ExpandWidth(true));
-            EditorGUI.DrawRect(r, new Color(0.13f, 0.3f, 0.55f));
-            var big = new GUIStyle(EditorStyles.boldLabel) { fontSize = 26, alignment = TextAnchor.MiddleCenter };
+            Rect r = GUILayoutUtility.GetRect(0, 48, GUILayout.ExpandWidth(true));
+            EditorGUI.DrawRect(r, new Color(0.06f, 0.09f, 0.16f));                                  // deep navy
+            EditorGUI.DrawRect(new Rect(r.x, r.yMax - 2, r.width, 2), new Color(0.2f, 0.34f, 0.6f)); // a thin lighter line under it
+            var big = new GUIStyle(EditorStyles.boldLabel) { fontSize = 22, alignment = TextAnchor.MiddleLeft };
             big.normal.textColor = Color.white;
-            GUI.Label(new Rect(r.x, r.y, r.width, 36), "KAT", big);
-            var small = new GUIStyle(EditorStyles.label) { alignment = TextAnchor.MiddleCenter };
-            small.normal.textColor = new Color(0.85f, 0.92f, 1f);
+            GUI.Label(new Rect(r.x + 10, r.y + 3, r.width - 20, 28), "KAT", big);
+            var small = new GUIStyle(EditorStyles.label) { alignment = TextAnchor.MiddleLeft };
+            small.normal.textColor = new Color(0.62f, 0.7f, 0.85f);
             string v = Version();
-            GUI.Label(new Rect(r.x, r.y + 32, r.width, 18), "Krislyz's Avatar Tools" + (v.Length > 0 ? "  " + v : ""), small);
+            GUI.Label(new Rect(r.x + 10, r.y + 28, r.width - 20, 16), "Krislyz's Avatar Tools" + (v.Length > 0 ? "  " + v : ""), small);
             EditorGUILayout.Space(2);
         }
 
@@ -156,8 +194,8 @@ namespace KAT
                 "Select model files (.fbx with a .kat.json) first.", Selection.objects.Length > 0, KatSyncPostprocessor.ApplyMenu);
             EditorGUILayout.Space(4);
             EditorGUI.BeginChangeCheck();
-            bool auto = EditorGUILayout.ToggleLeft("Make materials automatically when a model is imported", KatSyncPostprocessor.Auto);
-            bool write = EditorGUILayout.ToggleLeft("Write the sync files for Blender automatically", KatSyncPostprocessor.AutoWrite);
+            bool auto = EditorGUILayout.ToggleLeft("Make materials on import", KatSyncPostprocessor.Auto);
+            bool write = EditorGUILayout.ToggleLeft("Write sync files by itself", KatSyncPostprocessor.AutoWrite);
             if (EditorGUI.EndChangeCheck())
             {
                 KatSyncPostprocessor.Auto = auto;
