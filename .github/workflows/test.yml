@@ -1,0 +1,39 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  blender:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        blender: ["5.0.1", "5.1.2", "5.2.2"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Libraries Blender needs to start headless
+        run: sudo apt-get update && sudo apt-get install -y libxi6 libxkbcommon0 libxxf86vm1 libxfixes3 libxrender1 libsm6 libgl1 libegl1
+
+      - name: Blender ${{ matrix.blender }}
+        run: |
+          series="${MATRIX_BLENDER%.*}"
+          curl -fsSL "https://download.blender.org/release/Blender${series}/blender-${MATRIX_BLENDER}-linux-x64.tar.xz" | tar -xJ
+          echo "$PWD/blender-${MATRIX_BLENDER}-linux-x64" >> "$GITHUB_PATH"
+        env:
+          MATRIX_BLENDER: ${{ matrix.blender }}
+
+      - name: Tests
+        run: blender -b --factory-startup --python tests/run_all.py
+
+      - name: Validate and build the extension
+        run: |
+          blender --command extension validate kat
+          mkdir -p dist
+          blender --command extension build --source-dir kat --output-dir dist

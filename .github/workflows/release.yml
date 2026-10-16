@@ -1,0 +1,56 @@
+name: Release
+
+# Push a tag like v0.1.0. This builds the Blender extension and the Unity package and attaches both to a GitHub
+# release. The VPM listing that VCC and ALCOM read is not made here: the server that hosts it runs
+# tools/make_vpm_listing.py itself and reads the releases (see the docstring in that file).
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: The tag has to match the Blender and Unity versions
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          unity=$(python3 -c "import json; print(json.load(open('unity/com.krislyz.kat/package.json'))['version'])")
+          blender=$(sed -n 's/^version = "\(.*\)"/\1/p' kat/blender_manifest.toml)
+          echo "tag $tag, unity $unity, blender $blender"
+          test "$tag" = "$unity" && test "$tag" = "$blender"
+
+      - name: Libraries Blender needs to start headless
+        run: sudo apt-get update && sudo apt-get install -y libxi6 libxkbcommon0 libxxf86vm1 libxfixes3 libxrender1 libsm6 libgl1 libegl1
+
+      - name: Blender 5.2.2
+        run: |
+          curl -fsSL "https://download.blender.org/release/Blender5.2/blender-5.2.2-linux-x64.tar.xz" | tar -xJ
+          echo "$PWD/blender-5.2.2-linux-x64" >> "$GITHUB_PATH"
+
+      - name: Test before releasing
+        run: blender -b --factory-startup --python tests/run_all.py
+
+      - name: Build the Blender extension and the Unity package
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          mkdir -p dist
+          blender --command extension build --source-dir kat --output-dir dist
+          (cd unity/com.krislyz.kat && zip -r "../../dist/com.krislyz.kat-${tag}.zip" .)
+          ls -l dist
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          awk -v t="$tag" '/^## /{on = ($2 == t); next} on' CHANGELOG.md > notes.md
+          test -s notes.md   # the tag needs a CHANGELOG.md section: "## 0.1.0 - date"
+          gh release delete "$GITHUB_REF_NAME" --yes || true   # pushing the tag again replaces its release
+          flag=""
+          case "$tag" in *-*) flag="--prerelease";; esac   # 0.2.1-beta.1 is a pre-release
+          gh release create "$GITHUB_REF_NAME" dist/* --title "KAT $GITHUB_REF_NAME" --notes-file notes.md $flag

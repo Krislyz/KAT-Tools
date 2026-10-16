@@ -1,0 +1,28 @@
+{
+  "name": "KAT.Editor.VRChatWorld",
+  "rootNamespace": "KAT",
+  "references": [
+    "KAT.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "VRCSDKBase.dll"
+  ],
+  "autoReferenced": true,
+  "defineConstraints": [
+    "KAT_VRCWORLD"
+  ],
+  "versionDefines": [
+    {
+      "name": "com.vrchat.worlds",
+      "expression": "[3.0.0,)",
+      "define": "KAT_VRCWORLD"
+    }
+  ],
+  "noEngineReferences": false
+}

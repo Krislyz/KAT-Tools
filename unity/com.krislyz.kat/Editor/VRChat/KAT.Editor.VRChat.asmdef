@@ -1,0 +1,29 @@
+{
+  "name": "KAT.Editor.VRChat",
+  "rootNamespace": "KAT",
+  "references": [
+    "KAT.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "VRCSDKBase.dll",
+    "VRCSDK3A.dll"
+  ],
+  "autoReferenced": true,
+  "defineConstraints": [
+    "KAT_VRCSDK"
+  ],
+  "versionDefines": [
+    {
+      "name": "com.vrchat.avatars",
+      "expression": "[3.0.0,)",
+      "define": "KAT_VRCSDK"
+    }
+  ],
+  "noEngineReferences": false
+}

@@ -1,0 +1,14 @@
+schema_version = "1.0.0"
+id = "kat"
+version = "0.1.0"
+name = "KAT Blender Plugin"
+tagline = "Avatar prep for VRChat and Unity, with version history"
+maintainer = "Krislyz"
+website = "https://krislyz.com/kat/"
+type = "add-on"
+blender_version_min = "5.0.0"
+license = ["SPDX:GPL-3.0-only"]
+tags = ["Import-Export", "Rigging", "Object"]
+
+[permissions]
+files = "Version history and Unity sidecar export"

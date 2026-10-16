@@ -1,0 +1,38 @@
+# KAT Unity Utilities
+
+Companion to the KAT Blender plugin. Unity 2022.3 or newer. The VRChat SDK is optional.
+
+## What it does
+
+- Imports an FBX that has a `.kat.json` next to it as a humanoid, the first time it is imported.
+- **Makes the materials from Blender.** The `.kat.json` lists each material's textures. KAT creates the materials in a
+  `Materials` folder next to the model and uses them in place of the FBX's own. Materials that already exist are never
+  touched. Textures that live outside the project are copied in only after you say yes.
+- **Send to Blender.** Right-click a model file, a prefab, or an object in the scene and pick **KAT > Send to Blender**.
+  It writes `<model>.kat-unity.json` next to the model: which texture each material slot really uses (the materials as
+  they are on the prefab or object, so a swapped material comes across), and whether it is opaque, cutout or
+  transparent. Import the model in Blender and its materials point at the same files. For a model already open, press
+  Sync textures from Unity (Optimize > Textures). Nothing is written until you ask. KAT > Sync > Write for Blender
+  automatically brings the old behaviour back.
+- **Outfit toggles.** Mark the clothes in Blender's Outfits panel (and make the anti-clip shapes there), export, and
+  KAT > Set up outfit toggles builds the animator layers, the saved bool parameters and an Outfits menu. Where two
+  pieces are worn together it also turns on the blend shapes that keep them from clipping. Run it again after
+  changing the outfits: what KAT made before is replaced and nothing else is touched.
+- **Texture optimizer.** KAT > Optimize > Textures of selection caps the import size (2048) of the textures that the
+  selected objects, materials or folders use, turns compression on and uses crunch for colour maps. Only import
+  settings change, never the files, and running it again changes nothing.
+- **Worlds and props.** Export from Blender's World panel and the model comes in ready: collision proxies become
+  colliders, static meshes get static flags, pickups get a rigidbody, meshes without a lightmap UV map get one made,
+  and Name_LOD0, Name_LOD1 meshes become a LOD group. KAT > World has "Make selection static", "Bake occlusion culling"
+  and "Report scene cost". With the VRChat Worlds SDK, "Add VRChat pickup to selection" gives props a VRC_Pickup.
+- With the VRChat Avatars SDK installed: select your avatar in the scene, then KAT > Set up VRChat avatar. It adds the
+  avatar descriptor, sets the view position from the eye bones, and fills in the visemes.
+
+## Install
+
+**VRChat Creator Companion or ALCOM:** Settings > Packages > Add Repository, paste
+`https://krislyz.github.io/KAT-Tools/index.json` (or open `vcc://vpm/addRepo?url=https://krislyz.github.io/KAT-Tools/index.json`),
+then add "KAT Unity Utilities" to your project.
+
+**Unity Package Manager:** Add package from git URL:
+`https://github.com/Krislyz/KAT-Tools.git?path=/unity/com.krislyz.kat`
