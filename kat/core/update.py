@@ -24,7 +24,7 @@ def blender_asset(release):
     """(name, url) of the Blender extension zip on a release, or None."""
     for asset in release.get("assets", []):
         name, url = asset.get("name", ""), asset.get("browser_download_url", "")
-        if name.endswith(".zip") and re.fullmatch(r"kats-blender-plugin-v[\d.]+\.zip|kat-\d[\d.]*\.zip", name) and url.startswith(DOWNLOADS):
+        if name.endswith(".zip") and re.fullmatch(r"katt-blender-plugin-v[\d.]+\.zip|kat-\d[\d.]*\.zip", name) and url.startswith(DOWNLOADS):
             return name, url
     return None
 

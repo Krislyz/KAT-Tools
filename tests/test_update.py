@@ -10,13 +10,13 @@ spec = importlib.util.spec_from_file_location("kat_update", os.path.join(HERE, "
 up = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(up)
 
-URL = up.DOWNLOADS + "v0.3.0/kats-blender-plugin-v0.3.0.zip"
+URL = up.DOWNLOADS + "v0.3.0/katt-blender-plugin-v0.3.0.zip"
 
 
 def release(tag="v0.3.0", url=URL, **extra):
     return dict(tag_name=tag, html_url="page", assets=[
-        dict(name="kat-unity-plugin-v0.3.0.zip", browser_download_url=up.DOWNLOADS + "v0.3.0/kat-unity-plugin-v0.3.0.zip"),
-        dict(name="kats-blender-plugin-v0.3.0.zip", browser_download_url=url)], **extra)
+        dict(name="katt-unity-plugin-v0.3.0.zip", browser_download_url=up.DOWNLOADS + "v0.3.0/katt-unity-plugin-v0.3.0.zip"),
+        dict(name="katt-blender-plugin-v0.3.0.zip", browser_download_url=url)], **extra)
 
 
 class UpdateTest(unittest.TestCase):
@@ -35,7 +35,7 @@ class UpdateTest(unittest.TestCase):
     def test_ignores_prereleases_drafts_and_foreign_links(self):
         self.assertIsNone(up.newer(release(prerelease=True), "0.2.2"))
         self.assertIsNone(up.newer(release(draft=True), "0.2.2"))
-        self.assertIsNone(up.newer(release(url="https://evil.test/kats-blender-plugin-v0.3.0.zip"), "0.2.2"))
+        self.assertIsNone(up.newer(release(url="https://evil.test/katt-blender-plugin-v0.3.0.zip"), "0.2.2"))
 
     def test_old_zip_name_still_found(self):
         r = dict(tag_name="v0.3.0", assets=[dict(name="kat-0.3.0.zip", browser_download_url=up.DOWNLOADS + "v0.3.0/kat-0.3.0.zip")])

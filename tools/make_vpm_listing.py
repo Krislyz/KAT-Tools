@@ -69,7 +69,7 @@ def release_zips(repository, token):
         if release.get("draft"):  # a pre-release is listed: VCC and ALCOM only offer it to people who turned pre-releases on
             continue
         for asset in release.get("assets", []):
-            if asset["name"].startswith(("com.", "kat-unity-plugin-")) and asset["name"].endswith(".zip"):
+            if asset["name"].startswith(("com.", "katt-unity-plugin-")) and asset["name"].endswith(".zip"):
                 # with a token the API URL is used (private repositories, a higher limit); without one the plain download
                 # URL, which is not counted against the 60 requests an hour GitHub gives an unknown caller
                 out.append((asset["browser_download_url"], fetch(asset["url"] if token else asset["browser_download_url"], token)))

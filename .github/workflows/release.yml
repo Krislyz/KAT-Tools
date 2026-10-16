@@ -40,8 +40,8 @@ jobs:
           tag="${GITHUB_REF_NAME#v}"
           mkdir -p dist
           blender --command extension build --source-dir kat --output-dir dist
-          (cd unity/com.krislyz.kat && zip -r "../../dist/kat-unity-plugin-${GITHUB_REF_NAME}.zip" .)
-          mv dist/kat-${tag}.zip "dist/kats-blender-plugin-${GITHUB_REF_NAME}.zip"   # Blender reads the id from inside the zip, the name is free
+          (cd unity/com.krislyz.kat && zip -r "../../dist/katt-unity-plugin-${GITHUB_REF_NAME}.zip" .)
+          mv dist/kat-${tag}.zip "dist/katt-blender-plugin-${GITHUB_REF_NAME}.zip"   # Blender reads the id from inside the zip, the name is free
           ls -l dist
 
       - name: Publish the release
