@@ -2,7 +2,9 @@
 # Copyright (C) 2026 Krislyz
 """One background thread for all file work. Never touch bpy from jobs submitted here."""
 import logging
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor
+
+import bpy
 
 log = logging.getLogger("kat")
 _pool = None
@@ -16,6 +18,14 @@ def _report(future):
 
 def submit(fn, *args, **kwargs):
     global _pool
+    if bpy.app.background:  # no UI to keep responsive; a thread still running at quit crashes Blender's interpreter teardown
+        future = Future()
+        try:
+            future.set_result(fn(*args, **kwargs))
+        except Exception as err:
+            future.set_exception(err)
+        _report(future)
+        return future
     if _pool is None:
         _pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="kat")
     future = _pool.submit(fn, *args, **kwargs)

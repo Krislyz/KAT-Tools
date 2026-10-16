@@ -58,7 +58,7 @@ try:
 except ValueError as err:
     assert "Body2" in str(err)
 assert not os.path.exists(fbx_path) and not os.path.exists(fbx_path.replace(".fbx", ".kat.json"))
-assert set(export.fbx_options()) == set(export.FBX_OPTIONS), "this Blender still has every FBX option we use"
+assert set(export.fbx_options()) == set(export.FBX_OPTIONS) | {"use_mesh_modifiers", "use_triangles"}, "this Blender still has every FBX option we use"
 log = mesh.fix_model(ctx, rig, rename=True, transforms=True)
 assert any(line.startswith("Skipped hidden or excluded meshes: Body2") for line in log), log
 

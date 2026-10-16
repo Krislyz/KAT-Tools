@@ -36,7 +36,7 @@ Made for Blender 5.0 and newer. Tested on 5.0, 5.1 and 5.2.
 
 ## Install in Blender
 
-1. Download `kat-0.2.1.zip` from the [releases](https://github.com/Krislyz/KAT-Tools/releases).
+1. Download `kat-0.2.2.zip` from the [releases](https://github.com/Krislyz/KAT-Tools/releases).
    **Do not extract it.** Blender wants the zip.
 2. In Blender open **Edit > Preferences > Get Extensions**.
 3. Open the small arrow at the top right and pick **Install from Disk...**
@@ -57,7 +57,7 @@ KAT's Unity package comes through VPM, so VCC and ALCOM both take it.
 
 ![Adding the KAT repository in VCC](docs/install-vcc.gif)
 
-Export from Blender with **Export for Unity**. Next to the FBX it writes a small `.kat.json` file, and the package reads it to set up the humanoid, the materials, the outfit toggles and the VRChat avatar.
+Export from Blender with **Export for Unity**. The file window has options on the right: copy the textures the materials use (all of them, or only those that are not in your Unity project yet) into a folder you pick, apply modifiers, triangulate, embed the textures in the FBX, leaf bones, smoothing, and whether to write the `.kat.json`. Next to the FBX it writes a small `.kat.json` file, and the package reads it to set up the humanoid, the materials, the outfit toggles and the VRChat avatar.
 
 The other way: right-click a model file, a prefab or an object in the scene and pick **KAT > Send to Blender**. The rest of KAT's Unity side lives in one panel: **KAT > KAT Panel**, with tabs for Avatar, Sync, Optimize, World and Settings. It writes a `.kat-unity.json` next to the model with the texture each material really uses and whether it is opaque, cutout or transparent. Import the model in Blender and its materials point at the same files. For a model that is already open, press **Sync textures from Unity** in Optimize > Textures. Nothing is written until you ask.
 

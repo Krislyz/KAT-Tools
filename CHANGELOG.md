@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.2 - 2026-10-17
+
+### Added
+- Export for Unity has options in the file window. **Textures**: leave them, copy the ones that are not in the Unity project yet, or copy all, into a folder you pick (default `<name>_textures` next to the FBX). **Model**: apply modifiers, triangulate, leaf bones, embed the textures in the FBX, smoothing. **KAT**: whether to write the `.kat.json`. Nothing changes unless you tick it.
+
+### Fixed
+- Blender in the background (tests, scripts) no longer runs the history snapshots on a thread. It could still be running at quit and crash Blender.
+
 ## 0.2.1 - 2026-10-16
 
 ### Updated

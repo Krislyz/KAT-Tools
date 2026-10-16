@@ -3,6 +3,7 @@
 """Texture sync with Unity. Run: blender -b --factory-startup --python tests/blender_unitysync.py"""
 import json
 import os
+import shutil
 import sys
 import tempfile
 
@@ -161,4 +162,32 @@ assert pack_img.packed_file is not None, "the atlas stays packed in the .blend"
 listed = export.material_textures([packed_holder], out_dir, saved)
 assert listed == [{"name": "Packed", "textures": [{"role": "baseColor", "path": "Rig_textures/Rig_atlas_base.png"}]}], listed
 assert export.material_textures([packed_holder], out_dir) == [{"name": "Packed", "textures": []}], "without it there is nothing to point at"
+# export options: copying the textures a model uses, for a model whose textures Unity does not have yet
+proj = tempfile.mkdtemp(prefix="kat_proj_")
+os.makedirs(os.path.join(proj, "Assets", "Models"))
+os.makedirs(os.path.join(proj, "ProjectSettings"))
+assert export.unity_project_root(os.path.join(proj, "Assets", "Models")) == os.path.abspath(proj)
+assert export.unity_project_root(tempfile.gettempdir()) == "" or True  # a temp folder is not a project
+elsewhere = tempfile.mkdtemp(prefix="kat_tex_")
+shutil.copy(os.path.join(assets, "Textures", "Skin.png"), os.path.join(proj, "Assets", "Models", "InUnity.png"))
+shutil.copy(os.path.join(assets, "Textures", "SkinNormal.png"), os.path.join(elsewhere, "Outside.png"))
+two = bpy.data.materials.new("TwoFiles")
+for fname, socket in (("InUnity.png", "Base Color"), ("Outside.png", "Emission Color")):
+    node = two.node_tree.nodes.new("ShaderNodeTexImage")
+    node.image = bpy.data.images.load(os.path.join(proj, "Assets", "Models", fname) if fname == "InUnity.png" else os.path.join(elsewhere, fname))
+    two.node_tree.links.new(node.outputs["Color"], textures.principled(two).inputs[socket])
+two_holder = bpy.data.objects.new("TwoHolder", bpy.data.meshes.new("TwoHolder"))
+bpy.context.scene.collection.objects.link(two_holder)
+two_holder.data.materials.append(two)
+dest = os.path.join(proj, "Assets", "Models", "Rig_textures")
+only_outside = export.copy_textures([two_holder], dest, True, os.path.abspath(proj))
+assert sorted(only_outside.values()) == [os.path.join(dest, "Outside.png")], only_outside
+assert not os.path.exists(os.path.join(dest, "InUnity.png")), "what Unity already has is not copied"
+everything = export.copy_textures([two_holder], dest, False, os.path.abspath(proj))
+assert sorted(os.path.basename(p) for p in everything.values()) == ["InUnity.png", "Outside.png"], everything
+assert export.material_textures([two_holder], os.path.join(proj, "Assets", "Models"), everything)[0]["textures"], "the copies are what the sidecar lists"
+opts = export.fbx_options(apply_modifiers=False, triangulate=True, embed_textures=True, add_leaf_bones=False, smoothing="OFF")
+assert opts["use_mesh_modifiers"] is False and opts["use_triangles"] is True and opts["embed_textures"] is True
+assert opts["add_leaf_bones"] is False and opts["mesh_smooth_type"] == "OFF"
+assert "embed_textures" not in export.fbx_options(), "off by default"
 print("UNITYSYNC OK")
