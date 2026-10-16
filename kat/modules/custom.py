@@ -177,12 +177,26 @@ def settings(context):
     return context.scene.kat_custom
 
 
+def rig_of_mesh(ob):
+    """The armature a mesh is rigged to (its modifier, else its parent), or None."""
+    for mod in ob.modifiers:
+        if mod.type == "ARMATURE" and mod.object:
+            return mod.object
+    return ob.parent if ob.parent and ob.parent.type == "ARMATURE" else None
+
+
 def chosen_rigs(context):
-    """(base, [others]): what the panel names, or else the selection with the active armature as the base."""
+    """(base, [others]): what the panel names, or else the selection with the active armature as the base. A selected mesh
+    stands for the armature it is rigged to, so an outfit can be picked by its mesh."""
     s = settings(context)
     selected = [o for o in context.selected_objects if o.type == "ARMATURE"]
     base = s.base or (context.active_object if context.active_object in selected else None)
-    others = [s.other] if s.other else [o for o in selected if o != base]
+    found = list(selected)
+    for ob in context.selected_objects:
+        rig = rig_of_mesh(ob) if ob.type == "MESH" else None
+        if rig is not None and rig not in found:
+            found.append(rig)
+    others = [s.other] if s.other else [o for o in found if o != base]
     return base, [o for o in others if o != base]
 
 
@@ -197,7 +211,7 @@ class KAT_OT_merge_rigs(KatCustomOp, bpy.types.Operator):
         s = settings(context)
         base, others = chosen_rigs(context)
         if base is None or not others:
-            raise ValueError("Pick the base armature and the one to merge, or select both with the base active")
+            raise ValueError("Pick the avatar armature and the outfit to merge, or select the outfit with the avatar's armature active. An outfit already rigged to the avatar has nothing to merge")
         moved = sum(merge_rigs(context, base, o, s.attach_to, similar=s.similar, keep_extra=s.keep_extra, apply=s.apply,
                                join=s.join, drop_unused=s.drop_unused, clean_keys=s.clean_keys, keep_twist=s.keep_twist) for o in others)
         self.report({"INFO"}, f"Merged {moved} bones into {base.name}")
@@ -295,7 +309,7 @@ class KAT_PT_merge(bpy.types.Panel):
                 layout.label(text="Armatures are joined as they are", icon="INFO")
             layout.prop_search(s, "attach_to", base.data, "bones", text="Attach to")
         else:
-            uiutil.paragraph(layout, context, "Pick both armatures above, or select both with the base active.", "INFO")
+            uiutil.paragraph(layout, context, "Pick both armatures above, or select the outfit (its mesh or its armature) with the avatar's armature active.", "INFO")
         box = layout.box()
         box.prop(s, "similar")
         sub = box.column()

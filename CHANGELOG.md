@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.1 - 2026-10-17
+
+### Changed
+- Merge armatures: pick an outfit by selecting its mesh. Select the outfit's mesh (or its armature) with the avatar's armature active, and the armature the mesh is rigged to is merged into it. Stray bones are folded and twist bones dropped as before. An outfit that is already rigged to the avatar has nothing to merge, and the panel says so.
+
 ## 0.3.0 - 2026-10-17
 
 ### Added

@@ -141,6 +141,15 @@ count = len(rig.data.bones)
 assert custom.merge_rigs(ctx, rig, w_rig, similar=True, keep_extra=False) == 0 and len(rig.data.bones) == count
 assert {g.name for g in w_skin.vertex_groups} == {"mixamorig:Hips", "stray"}, "the stray root went to the closest base bone"
 
+# an outfit can be picked by its mesh: the armature it is rigged to is the one merged
+m_rig, m_skin = outfit_rig("ByMesh", [("Hips", None, (0, 0, 1.0), (0, 0, 1.2)), ("bow", "Hips", (0, 0, 1.2), (0, 0, 1.3))])
+from types import SimpleNamespace  # noqa: E402
+fake = SimpleNamespace(scene=SimpleNamespace(kat_custom=SimpleNamespace(base=None, other=None)),
+                       selected_objects=[rig, m_skin], active_object=rig)
+assert custom.chosen_rigs(fake) == (rig, [m_rig])
+fake.selected_objects = [rig]
+assert custom.chosen_rigs(fake) == (rig, [])
+
 ghost = bpy.data.objects.new("Ghost", bpy.data.armatures.new("Ghost"))  # not in the scene
 for args in ((ghost, "nope"), (ghost, "")):
     try:

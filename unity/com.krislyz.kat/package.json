@@ -1,7 +1,7 @@
 {
   "name": "com.krislyz.kat",
   "displayName": "KAT Unity Utilities",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "unity": "2022.3",
   "description": "Imports avatars exported by the KAT Blender plugin as humanoids, makes their materials, keeps textures in sync with Blender, and sets up the VRChat avatar descriptor.",
   "author": {
