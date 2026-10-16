@@ -4,8 +4,8 @@ Companion to the KAT Blender plugin. Unity 2022.3 or newer. The VRChat SDK is op
 
 ## What it does
 
-- Imports an FBX that has a `.kat.json` next to it as a humanoid, the first time it is imported.
-- **Makes the materials from Blender.** The `.kat.json` lists each material's textures. KAT creates the materials in a
+- **KAT only acts when you ask.** Nothing on a model or a setting is changed by itself. The Sync tab has a button, Set selected models up as humanoid, for an FBX that has a `.kat.json` next to it, and the World tab has Set selected up as world or props. Each has a switch to do it on a model's first import instead, off by default.
+- **Makes the materials from Blender.** Press Make materials from Blender's textures (Sync tab) on a selected model. The `.kat.json` lists each material's textures. KAT creates the materials in a
   `Materials` folder next to the model and uses them in place of the FBX's own. Materials that already exist are never
   touched. Textures that live outside the project are copied in only after you say yes.
 - **The KAT panel.** **KAT > KAT Panel** opens one window with tabs (Avatar, Sync, Optimize, World, Settings), the way the VRChat SDK has its control panel. Everything below is a button in it. Dock it anywhere. Pick the avatar at the top, or let it follow what you select.

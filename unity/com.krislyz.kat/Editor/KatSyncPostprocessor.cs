@@ -14,10 +14,10 @@ namespace KAT
         const string AutoWriteKey = "KAT.AutoWrite";
         static bool pending;
 
-        /// <summary>Make materials from what Blender wrote, when a model with a .kat.json is imported.</summary>
+        /// <summary>Make materials from what Blender wrote, when a model with a .kat.json is imported. Off unless you turn it on.</summary>
         public static bool Auto
         {
-            get { return EditorPrefs.GetBool(AutoKey, true); }
+            get { return EditorPrefs.GetBool(AutoKey, false); }
             set { EditorPrefs.SetBool(AutoKey, value); }
         }
 

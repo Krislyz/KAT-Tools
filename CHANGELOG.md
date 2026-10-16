@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.3 - 2026-10-17
+
+### Fixed
+- Glass: a material that is see-through on purpose (transmission, alpha below 1, or named glass) is never given a texture. It was matched to a random file by name, and a stray image node on it went to Unity as its base colour. Name matching for textures is also stricter.
+- Unity: every model with a `.kat.json` was treated as a world or prop, because an empty world section counted as one. KAT switched Read/Write off on every import of an avatar, so a Read/Write tick in the model importer came back off. A world now counts only if it lists meshes, its settings apply on the first import only, and avatars are never touched.
+- Export for Unity: the Textures folder is a text box now. The folder picker could not open from inside the export window ("Cannot activate a file selector dialog, one already open"). Type a folder name (next to the FBX) or a full path.
+
+### Changed
+- KAT only acts when you ask. Unity: making materials on import, setting a model up as humanoid on import, and setting up worlds and props on import are all off by default. Each has a button in the KAT panel (Sync and World tabs) and a switch to turn the automatic version on. Blender: searching for textures when a .blend opens is off by default (a switch in Settings). Importing a model still searches, because you started that.
+- Missing textures (the purple ones) show a prompt in Quick access with **Pick the textures folder**. It looks at every mesh in the scene, so an outfit you just imported gets its textures too.
+- Merge armatures names the outfit meshes' armature modifier after the armature they were merged into (`Armature.001` becomes `Armature`).
+
 ## 0.3.2 - 2026-10-17
 
 ### Fixed

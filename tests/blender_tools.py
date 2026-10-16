@@ -89,6 +89,10 @@ assert vrc.RANKS[vrc.evaluate(big)[1]] == "Very Poor"
 
 # export: FBX and sidecar land next to each other, sidecar maps Unity bone names to the real ones
 out = os.path.join(tmp, "avatar.fbx")
+base_dir = os.path.dirname(os.path.abspath(out))
+assert export.textures_target(base_dir, "") == "" and export.textures_target(base_dir, "  ") == ""
+assert export.textures_target(base_dir, "Tex") == os.path.join(base_dir, "Tex")
+assert export.textures_target(base_dir, os.path.join(base_dir, "Abs")) == os.path.join(base_dir, "Abs")
 fbx, meta = export.export_unity(bpy.context, rig, out)
 assert os.path.getsize(fbx) > 1000 and meta.endswith("avatar.kat.json")
 data = json.load(open(meta, encoding="utf-8"))

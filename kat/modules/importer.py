@@ -169,7 +169,7 @@ class KAT_OT_import_model(bpy.types.Operator):
             notes.append(unitysync.summary(result.unity))
         self.report({"INFO"}, ", ".join(notes))
         if result.textures and result.textures.unresolved:
-            self.report({"WARNING"}, "Some textures were not found. Use Model > Find missing textures and pick their folder")
+            self.report({"WARNING"}, "Some textures were not found. Press Pick the textures folder in Quick access")
         return {"FINISHED"}
 
 

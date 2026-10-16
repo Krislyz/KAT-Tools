@@ -16,6 +16,7 @@ D = SimpleNamespace(
     history_max_file_mb=1024,
     import_flat_view=True,
     import_find_textures=True,
+    load_find_textures=False,
     import_unity_sync=True,
     check_updates=True,
 )
@@ -36,6 +37,8 @@ class KatPreferences(bpy.types.AddonPreferences):
                                    description="After Import model, frame the model and set the viewport to Solid, Flat lighting, Texture colour")
     import_unity_sync: BoolProperty(name="Use Unity's textures", default=D.import_unity_sync,
                                     description="After Import model, if the Unity package left a .kat-unity.json next to the model, use the textures Unity uses")
+    load_find_textures: BoolProperty(name="Search when a .blend opens", default=D.load_find_textures,
+                                     description="When you open a .blend file, look near it for textures that are missing. Off by default: KAT only acts when you ask")
     import_find_textures: BoolProperty(name="Search for missing textures", default=D.import_find_textures,
                                        description="After Import model, look near the file for textures the model could not find (max 8 seconds)")
 
@@ -49,7 +52,7 @@ class KatPreferences(bpy.types.AddonPreferences):
             box.prop(self, name)
         box = col.box()
         box.label(text="Import model")
-        for name in ("import_flat_view", "import_find_textures", "import_unity_sync"):
+        for name in ("import_flat_view", "import_find_textures", "import_unity_sync", "load_find_textures"):
             box.prop(self, name)
 
 

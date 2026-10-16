@@ -194,13 +194,19 @@ namespace KAT
                 "Select model files (.fbx with a .kat.json) first.", Selection.objects.Length > 0, KatSyncPostprocessor.ApplyMenu);
             EditorGUILayout.Space(4);
             EditorGUI.BeginChangeCheck();
-            bool auto = EditorGUILayout.ToggleLeft("Make materials on import", KatSyncPostprocessor.Auto);
+            bool auto = EditorGUILayout.ToggleLeft("Make materials when a model is imported", KatSyncPostprocessor.Auto);
             bool write = EditorGUILayout.ToggleLeft("Write sync files by itself", KatSyncPostprocessor.AutoWrite);
             if (EditorGUI.EndChangeCheck())
             {
                 KatSyncPostprocessor.Auto = auto;
                 KatSyncPostprocessor.AutoWrite = write;
             }
+            EditorGUILayout.Space(4);
+            EditorGUILayout.LabelField("New models", EditorStyles.boldLabel);
+            DrawButton("Set selected models up as humanoid",
+                "Humanoid rig, blend shapes on, no cameras or lights, for each selected model that has a .kat.json. Only when you press this.",
+                Selection.objects.Length > 0, () => KatModelPostprocessor.SetUpSelected());
+            KatModelPostprocessor.Auto = EditorGUILayout.ToggleLeft("Set up new avatars as humanoid on import", KatModelPostprocessor.Auto);
             DrawEntries("Sync");
         }
 
@@ -218,6 +224,10 @@ namespace KAT
                 Selection.gameObjects.Length > 0, KatWorldPostprocessor.MakeSelectionStatic);
             DrawButton("Bake occlusion culling", "Mark the scenery static first.", true, KatWorldPostprocessor.BakeOcclusion);
             DrawButton("Report scene cost", "Renderers, triangles and materials in the open scene, in the console.", true, KatWorldPostprocessor.Report);
+            DrawButton("Set selected up as world or props",
+                "Colliders, static flags, pickups and lightmap UVs for each selected model that came from KAT's world export. Only when you press this.",
+                Selection.objects.Length > 0, () => KatWorldPostprocessor.SetUpSelected());
+            KatWorldPostprocessor.Auto = EditorGUILayout.ToggleLeft("Set up new worlds and props on import", KatWorldPostprocessor.Auto);
             DrawEntries("World");
         }
 

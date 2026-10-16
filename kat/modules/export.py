@@ -153,6 +153,14 @@ def sidecar(rig, meshes, folder="", saved=None):
     }
 
 
+def textures_target(folder, value):
+    """Where copied textures go: `value` as a full path, or as a folder name next to the FBX. Empty gives ''."""
+    value = value.strip()
+    if not value:
+        return ""
+    return os.path.abspath(value if os.path.isabs(value) else os.path.join(folder, value))
+
+
 def export_unity(context, rig, path, sidecar_file=True, textures_mode="NONE", textures_folder="", **fbx_settings):
     """Write `path` (.fbx) and `path` with .kat.json next to it. Returns both paths (the second is '' without the sidecar).
     `textures_mode`: NONE (only images that exist nowhere but in Blender are written), OUTSIDE (also copy the texture
@@ -169,7 +177,7 @@ def export_unity(context, rig, path, sidecar_file=True, textures_mode="NONE", te
     json_path = os.path.splitext(path)[0] + ".kat.json"
     folder = os.path.dirname(os.path.abspath(path))
     stem = os.path.splitext(os.path.basename(path))[0]
-    target = os.path.abspath(bpy.path.abspath(textures_folder)) if textures_folder else ""
+    target = textures_target(folder, textures_folder)
     saved = write_unsaved(meshes, folder, stem, target)
     if textures_mode in ("OUTSIDE", "ALL"):
         safe = "".join(c if c.isalnum() or c in "-_ ." else "_" for c in stem)
@@ -212,8 +220,8 @@ class KAT_OT_export_unity(bpy.types.Operator, ExportHelper):
                ("ALL", "Copy all", "Copy every texture file the materials use")],
         description="Whether to copy the textures the materials use, for a model whose textures Unity does not have yet")
     textures_folder: StringProperty(
-        name="Textures folder", subtype="DIR_PATH", default="",
-        description="Where the copied textures go. Empty: a <name>_textures folder next to the FBX. Pick a folder inside your Unity project's Assets to have them imported")
+        name="Textures folder", default="",
+        description="Where the copied textures go: a folder name next to the FBX, or a full path (a folder inside your Unity project's Assets gets them imported). Empty: <name>_textures next to the FBX. Typed, not browsed: Blender cannot open a second file window from this one")
     sidecar_file: BoolProperty(name="Write the KAT file", default=True,
                                description="The .kat.json next to the FBX: the humanoid map, blendshapes, visemes, materials and textures, outfits. The KAT Unity package reads it")
     apply_modifiers: BoolProperty(name="Apply modifiers", default=True,
@@ -234,7 +242,7 @@ class KAT_OT_export_unity(bpy.types.Operator, ExportHelper):
         box.prop(self, "textures_mode", text="")
         if self.textures_mode != "NONE":
             box.prop(self, "textures_folder", text="")
-            box.label(text="Empty: next to the FBX", icon="INFO")
+            box.label(text="A name next to the FBX, or a full path. Empty: <name>_textures", icon="INFO")
         box = layout.box()
         box.label(text="Model", icon="MESH_DATA")
         box.prop(self, "apply_modifiers")

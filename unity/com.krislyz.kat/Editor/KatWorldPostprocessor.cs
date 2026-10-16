@@ -17,12 +17,53 @@ namespace KAT
         public const StaticEditorFlags StaticFlags = StaticEditorFlags.ContributeGI | StaticEditorFlags.OccluderStatic
             | StaticEditorFlags.OccludeeStatic | StaticEditorFlags.BatchingStatic | StaticEditorFlags.ReflectionProbeStatic;
 
+        const string AutoKey = "KAT.AutoWorld";
+
+        /// <summary>Set up a world or props model when it is first imported. Off unless you turn it on.</summary>
+        public static bool Auto
+        {
+            get { return EditorPrefs.GetBool(AutoKey, false); }
+            set { EditorPrefs.SetBool(AutoKey, value); }
+        }
+
+        /// <summary>Set the selected world or props models up (import settings, colliders, static flags, pickups). Returns how many.</summary>
+        public static int SetUpSelected()
+        {
+            int done = 0;
+            foreach (Object selected in Selection.objects)
+            {
+                string path = AssetDatabase.GetAssetPath(selected);
+                KatWorld world = path.EndsWith(".fbx", System.StringComparison.OrdinalIgnoreCase) ? KatSidecar.Load(path)?.world : null;
+                if (world == null || !world.Present)
+                    continue;
+                var importer = (ModelImporter)AssetImporter.GetAtPath(path);
+                Apply(importer, world);
+                forced.Add(path);
+                try { importer.SaveAndReimport(); }
+                finally { forced.Remove(path); }
+                done++;
+            }
+            Debug.Log($"KAT: set up {done} world or props model(s)");
+            return done;
+        }
+
+        static readonly HashSet<string> forced = new HashSet<string>(); // models being set up because you asked
+
+        bool Wanted(KatWorld world)
+        {
+            return world != null && world.Present && (forced.Contains(assetPath) || (Auto && assetImporter.importSettingsMissing));
+        }
+
         void OnPreprocessModel()
         {
             KatWorld world = KatSidecar.Load(assetPath)?.world;
-            if (world == null)
-                return;
-            var importer = (ModelImporter)assetImporter;
+            if (!Wanted(world))
+                return; // a model is only set up when you ask, or on its first import with the option on
+            Apply((ModelImporter)assetImporter, world);
+        }
+
+        static void Apply(ModelImporter importer, KatWorld world)
+        {
             int statics = world.@static == null ? 0 : world.@static.Length;
             int lightmapped = world.lightmap == null ? 0 : world.lightmap.Length;
             // Blender made lightmap UVs for some meshes; for the rest let Unity unwrap them
@@ -37,7 +78,7 @@ namespace KAT
         void OnPostprocessModel(GameObject root)
         {
             KatWorld world = KatSidecar.Load(assetPath)?.world;
-            if (world == null)
+            if (!Wanted(world))
                 return;
             var byName = new Dictionary<string, Transform>();
             foreach (Transform t in root.GetComponentsInChildren<Transform>(true))

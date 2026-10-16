@@ -74,6 +74,7 @@ def merge_rigs(context, base, other, attach_to="", similar=False, keep_extra=Tru
         for mod in ob.modifiers:
             if mod.type == "ARMATURE" and (mod.object is None or mod.object == other):  # the join may leave the old pointer
                 mod.object = base
+                mod.name = base.name  # the import named it after the outfit's armature (Armature.001)
         if was_child:
             ob.parent = base
             ob.matrix_parent_inverse = base.matrix_world.inverted()

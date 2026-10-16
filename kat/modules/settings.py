@@ -34,6 +34,7 @@ class KAT_PT_settings(bpy.types.Panel):
         box.label(text="Import model")
         box.prop(p, "import_flat_view")
         box.prop(p, "import_find_textures")
+        box.prop(p, "load_find_textures")
         box.prop(p, "import_unity_sync")
 
 

@@ -45,7 +45,7 @@ clashed = next(b for b in rig.data.bones if b.name.startswith("hair_01.Tail"))
 assert clashed.parent.name == "mixamorig:Hips", "other rig's root hangs off the chosen bone"
 assert rig.data.bones["tip"].parent == clashed
 assert "Tail" not in bpy.data.objects, "joined armature object is gone"
-assert fur.modifiers["Armature"].object == rig, "meshes of the merged rig now follow the base"
+assert fur.modifiers[0].object == rig, "meshes of the merged rig now follow the base"
 assert fur.vertex_groups.get(clashed.name) is not None, "vertex groups followed the renamed bone"
 
 # similar bones are merged, not added twice: a Hips in both
@@ -76,7 +76,7 @@ names = {g.name for g in strand.vertex_groups}
 assert names == {"mixamorig:Hips", "ponytail"}, names
 w = {v.index: g.weight for v in strand.data.vertices for g in v.groups if strand.vertex_groups[g.group].name == "mixamorig:Hips"}
 assert w == {0: 0.5, 1: 0.5}, w
-assert strand.modifiers["Armature"].object == rig
+assert strand.modifiers[0].object == rig
 
 # the other armature's extra bones can be folded into the matching one instead
 fold_data = bpy.data.armatures.new("Fold")
@@ -149,7 +149,7 @@ ctx.view_layer.update()
 assert not h_skin.visible_get()
 custom.merge_rigs(ctx, rig, h_rig, similar=True, keep_extra=False)
 assert {g.name for g in h_skin.vertex_groups} <= {b.name for b in rig.data.bones}, [g.name for g in h_skin.vertex_groups]
-assert h_skin.modifiers["Armature"].object == rig
+assert h_skin.modifiers[0].object == rig
 assert sum(g.weight for v in h_skin.data.vertices for g in v.groups) > 3.99, "all four weights arrived"
 
 # with Apply transforms ticked, and a mesh whose modifier still points at the merged armature
@@ -157,7 +157,8 @@ a_rig, a_skin = outfit_rig("Applied", [(n if n == "Hips" else n + "_a", p if p i
 a_rig.scale = (0.85, 0.85, 0.85)
 custom.merge_rigs(ctx, rig, a_rig, similar=True, keep_extra=False, apply=True)
 assert {g.name for g in a_skin.vertex_groups} <= {b.name for b in rig.data.bones}, [g.name for g in a_skin.vertex_groups]
-assert a_skin.modifiers["Armature"].object == rig
+assert a_skin.modifiers[0].object == rig
+assert [m.name for m in a_skin.modifiers] == [rig.name], "the modifier is named after the armature it went to"
 
 # an outfit can be picked by its mesh: the armature it is rigged to is the one merged
 m_rig, m_skin = outfit_rig("ByMesh", [("Hips", None, (0, 0, 1.0), (0, 0, 1.2)), ("bow", "Hips", (0, 0, 1.2), (0, 0, 1.3))])

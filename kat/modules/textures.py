@@ -63,12 +63,25 @@ def is_missing(img):
     return img.source == "FILE" and not img.packed_file and not os.path.isfile(file_of(img))
 
 
+def is_glass(mat):
+    """A material that is see-through on purpose (glass, a visor, a lens): transmission, or an alpha below 1, with nothing
+    plugged into either. It has no texture and must not be given one."""
+    node = principled(mat)
+    if node is None:
+        return False
+    for name, clear in (("Transmission Weight", lambda v: v > 0.01), ("Alpha", lambda v: v < 0.99)):
+        socket = node.inputs.get(name)
+        if socket is not None and not socket.is_linked and clear(socket.default_value):
+            return True
+    return "glass" in mat.name.lower()
+
+
 def bare_materials(mats):
-    """Materials that have a shader but no image at all behind their base colour."""
+    """Materials that have a shader but no image at all behind their base colour. Glass is left out: no texture belongs on it."""
     out = []
     for mat in mats:
         node = principled(mat)
-        if node is None or node.inputs["Base Color"].is_linked or any(n.image for n in image_nodes(mat)):
+        if node is None or node.inputs["Base Color"].is_linked or any(n.image for n in image_nodes(mat)) or is_glass(mat):
             continue
         out.append(mat)
     return out
@@ -113,7 +126,7 @@ def material_roles(mat):
         image = upstream_image(socket) if socket is not None and socket.is_linked else None
         if image is not None:
             roles[role] = image
-    if "baseColor" not in roles:
+    if "baseColor" not in roles and not is_glass(mat):  # glass has no texture: a stray image node is not one
         fallback = base_colour_image_node(mat)
         if fallback is not None:
             roles["baseColor"] = fallback.image
@@ -182,6 +195,23 @@ def search_roots(model_path="", extra=""):
     return roots
 
 
+def scene_meshes(context):
+    """Every mesh in the scene: the model, an outfit that was just imported next to it, a prop."""
+    return [o for o in context.scene.objects if o.type == "MESH"]
+
+
+_missing_cache = {"at": 0.0, "key": None, "count": 0}
+
+
+def missing_count(context):
+    """How many textures the scene's materials ask for but cannot find. Cached for a couple of seconds: panels ask on every redraw."""
+    now = time.monotonic()
+    key = (id(context.scene), len(bpy.data.images), len(bpy.data.materials))
+    if _missing_cache["key"] != key or now - _missing_cache["at"] > 2.0:
+        _missing_cache.update(at=now, key=key, count=len(missing_images(scene_meshes(context))))
+    return _missing_cache["count"]
+
+
 def missing_images(objects):
     out = []
     for mat in materials_of(objects):
@@ -218,7 +248,7 @@ def _on_load(*_):
 
     def later():
         try:
-            if prefs.get().import_find_textures:
+            if prefs.get().load_find_textures:
                 auto_find()
         except Exception:  # never let a convenience break opening a file
             log.exception("kat: texture search after load failed")
@@ -240,14 +270,14 @@ def summary(result):
 class KAT_OT_find_textures(bpy.types.Operator):
     bl_idname = "kat.find_textures"
     bl_label = "Find missing textures"
-    bl_description = "Search near the model (and a folder you pick) for textures the materials ask for but can't find"
+    bl_description = ("Search near the models and in a folder you pick for the textures the materials ask for but cannot find "
+                      "(they show purple), and put them back on every mesh in the scene, outfits you just imported too")
     bl_options = {"REGISTER", "UNDO"}
     directory: StringProperty(subtype="DIR_PATH")
 
     def invoke(self, context, event):
         # try on its own first; only when something is still missing is a folder asked for
-        rig = armature.rig_of(context)
-        objects = armature.meshes_of(rig) if rig else [o for o in context.selected_objects if o.type == "MESH"]
+        objects = scene_meshes(context)
         if objects:
             result = auto_find(objects)
             if not missing_images(objects):
@@ -258,10 +288,10 @@ class KAT_OT_find_textures(bpy.types.Operator):
 
     @operator_guard
     def execute(self, context):
-        rig = armature.rig_of(context)
-        objects = armature.meshes_of(rig) if rig else [o for o in context.selected_objects if o.type == "MESH"]
+        objects = scene_meshes(context)
         if not objects:
-            raise ValueError("Select a rigged model or some meshes")
+            raise ValueError("There are no meshes in this scene")
+        _missing_cache["key"] = None
         result = find_textures(objects, search_roots(extra=self.directory), seconds=8.0)
         self.report({"INFO"}, summary(result) or "No missing textures")
         return {"FINISHED"}

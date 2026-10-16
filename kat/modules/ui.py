@@ -65,6 +65,12 @@ class KAT_PT_main(bpy.types.Panel):
         sub = row.row(align=True)
         sub.enabled = rig is not None
         sub.operator("kat.export_unity", text="Export", icon="EXPORT")
+        from . import textures  # lazy: textures imports modules that import this one
+        missing = textures.missing_count(context)
+        if missing:
+            box = layout.box()
+            box.label(text=f"{missing} textures not found (they show purple)", icon="ERROR")
+            box.operator("kat.find_textures", text="Pick the textures folder", icon="FILE_FOLDER")
         if rig is None:
             uiutil.paragraph(layout, context, "Select a rigged model to see its state here.", "INFO")
             return

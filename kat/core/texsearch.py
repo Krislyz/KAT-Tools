@@ -96,7 +96,7 @@ def match_material(material_name, paths):
     best, best_score = None, 0
     for p in paths:
         kind, base = role(p)
-        if kind == "other" or not base or (base != want and want not in base and base not in want):
+        if kind == "other" or not base or (base != want and want not in base and not (len(base) >= 4 and base in want)):
             continue
         score = (4 if base == want else 2) + (1 if kind == "colour" else 0)
         if score > best_score:

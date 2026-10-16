@@ -75,6 +75,9 @@ namespace KAT
         public string[] lightmap; // meshes that already have a second UV map for lightmaps
         public KatCollider[] colliders;
         public KatLodGroup[] lods;
+
+        /// <summary>JsonUtility makes an empty KatWorld when a sidecar has none, so a non-null world does not mean a world.</summary>
+        public bool Present { get { return meshes != null && meshes.Length > 0; } }
     }
 
     /// <summary>What the Blender plugin wrote next to the FBX (model.kat.json).</summary>

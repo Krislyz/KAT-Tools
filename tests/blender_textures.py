@@ -111,4 +111,25 @@ assert textures.missing_images([auto])
 found = textures.auto_find([auto])
 assert found.fixed == 1 and not textures.missing_images([auto]), found
 assert textures.auto_find([auto]) is textures.NOTHING, "nothing missing, nothing scanned"
+# glass has no texture on purpose and is never given one, even when a file has a similar name
+write_png(os.path.join(texdir, "Window_D.png"), (1, 1, 0, 1))
+glass = bpy.data.materials.new("Window")
+glass.node_tree.nodes["Principled BSDF"].inputs["Transmission Weight"].default_value = 1.0
+clear = bpy.data.materials.new("Visor")
+clear.node_tree.nodes["Principled BSDF"].inputs["Alpha"].default_value = 0.2
+named = bpy.data.materials.new("Glasses")
+solid = bpy.data.materials.new("Window.001")  # opaque, same name as a texture: still matched
+assert textures.is_glass(glass) and textures.is_glass(clear) and textures.is_glass(named) and not textures.is_glass(solid)
+assert [m.name for m in textures.bare_materials([glass, clear, named, solid])] == ["Window.001"]
+
+# a stray image node on glass is not its texture: the sidecar and Unity get none
+stray = glass.node_tree.nodes.new("ShaderNodeTexImage")
+stray.image = bpy.data.images.new("Stray", 4, 4)
+assert textures.material_roles(glass) == {}, textures.material_roles(glass)
+# the scene's missing textures are counted for the Quick access prompt, outfits imported next to the model included
+outfit = bpy.data.objects.new("Outfit", bpy.data.meshes.new("Outfit"))
+bpy.context.scene.collection.objects.link(outfit)
+outfit.data.materials.append(material("OutfitMat", "C:/gone/Nowhere_D.PNG"))
+textures._missing_cache["key"] = None
+assert textures.missing_count(bpy.context) >= 1 and outfit in textures.scene_meshes(bpy.context)
 print("TEXTURES OK")
