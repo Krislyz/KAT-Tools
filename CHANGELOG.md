@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1 - 2026-10-16
+
+### Fixed
+- Unity: opening a project with KAT installed logged `'[3.0.0,)' is not a valid expression` and a NullReferenceException from the script compiler. The VRChat avatar and world assemblies used an open-ended version range that Unity does not accept. They use a plain minimum version (`3.0.0`) now.
+
 ## 0.1.0 - 2026-10-16
 
 First release.

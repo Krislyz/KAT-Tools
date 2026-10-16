@@ -25,6 +25,13 @@ def make_zip(version, name="com.krislyz.kat"):
 
 
 class ListingTest(unittest.TestCase):
+    def test_asmdef_version_expressions_are_ones_unity_accepts(self):
+        # Unity rejects an interval with an empty end such as "[3.0.0,)": a minimum version is just "3.0.0"
+        import glob
+        for path in glob.glob(os.path.join(PACKAGE_DIR, "Editor", "**", "*.asmdef"), recursive=True):
+            for define in json.load(open(path, encoding="utf-8")).get("versionDefines", []):
+                self.assertNotRegex(define["expression"], r",\s*[)\]]", (path, define["expression"]))
+
     def test_prerelease_sorts_between_releases(self):
         keys = ["0.2.1", "0.2.1-beta.10", "0.2.1-beta.2", "0.2.1-beta.1", "0.2.0"]
         self.assertEqual(sorted(keys, key=vpm.version_key, reverse=True), keys)
