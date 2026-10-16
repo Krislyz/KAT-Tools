@@ -170,12 +170,12 @@ for group in (scene.kat, scene.kat_refit, scene.kat_outfits, scene.kat_custom):
 draw_all(context, "flipped")
 assert flipped >= 20, flipped
 
-# every panel starts closed, except Updates and Credits
+# every panel starts closed, except Quick access, Updates and Credits
 panels = [c for c in (getattr(bpy.types, n) for n in dir(bpy.types) if n.startswith("KAT_PT_"))]
 assert len(panels) > 15, len(panels)
 for cls in panels:
     closed = "DEFAULT_CLOSED" in getattr(cls, "bl_options", set())
-    assert closed == (cls.bl_idname not in ("KAT_PT_updates", "KAT_PT_credits")), cls.bl_idname
+    assert closed == (cls.bl_idname not in ("KAT_PT_main", "KAT_PT_updates", "KAT_PT_credits")), cls.bl_idname
 
 kat.unregister()
 print(f"drew {n2} panels, checked {seen['props']} properties, {seen['operators']} buttons, {seen['lists']} lists")

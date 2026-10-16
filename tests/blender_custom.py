@@ -141,6 +141,24 @@ count = len(rig.data.bones)
 assert custom.merge_rigs(ctx, rig, w_rig, similar=True, keep_extra=False) == 0 and len(rig.data.bones) == count
 assert {g.name for g in w_skin.vertex_groups} == {"mixamorig:Hips", "stray"}, "the stray root went to the closest base bone"
 
+# a hidden outfit mesh gets its weights too
+rows_h = [(n if n == "Hips" else n + "_h", p if p is None or p == "Hips" else p + "_h", h, t) for n, p, h, t in rows]
+h_rig, h_skin = outfit_rig("Hidden", rows_h)
+h_skin.hide_viewport = True
+ctx.view_layer.update()
+assert not h_skin.visible_get()
+custom.merge_rigs(ctx, rig, h_rig, similar=True, keep_extra=False)
+assert {g.name for g in h_skin.vertex_groups} <= {b.name for b in rig.data.bones}, [g.name for g in h_skin.vertex_groups]
+assert h_skin.modifiers["Armature"].object == rig
+assert sum(g.weight for v in h_skin.data.vertices for g in v.groups) > 3.99, "all four weights arrived"
+
+# with Apply transforms ticked, and a mesh whose modifier still points at the merged armature
+a_rig, a_skin = outfit_rig("Applied", [(n if n == "Hips" else n + "_a", p if p is None or p == "Hips" else p + "_a", h, t) for n, p, h, t in rows])
+a_rig.scale = (0.85, 0.85, 0.85)
+custom.merge_rigs(ctx, rig, a_rig, similar=True, keep_extra=False, apply=True)
+assert {g.name for g in a_skin.vertex_groups} <= {b.name for b in rig.data.bones}, [g.name for g in a_skin.vertex_groups]
+assert a_skin.modifiers["Armature"].object == rig
+
 # an outfit can be picked by its mesh: the armature it is rigged to is the one merged
 m_rig, m_skin = outfit_rig("ByMesh", [("Hips", None, (0, 0, 1.0), (0, 0, 1.2)), ("bow", "Hips", (0, 0, 1.2), (0, 0, 1.3))])
 from types import SimpleNamespace  # noqa: E402

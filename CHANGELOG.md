@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.2 - 2026-10-17
+
+### Fixed
+- Merging bones (Merge to parent, and Merge armatures) now moves the weights of hidden meshes too. Before, a mesh you could not see lost its bones without its weights moving, so it stopped following the avatar.
+- Merge armatures: with Apply transforms ticked, the outfit's meshes could stay tied to the armature that was merged away, and their weights were never moved (the sleeves stayed in T-pose while the bones were gone). The meshes are now moved to the avatar's armature and their weights follow, and the vertex groups follow every renamed bone before folding.
+
+### Changed
+- The Updates panel sits just above Credits. Quick access starts open again, with Updates and Credits. Every other panel starts closed.
+
 ## 0.3.1 - 2026-10-17
 
 ### Changed
@@ -15,7 +24,7 @@
 - Merge armatures: the other armature's stray bones are folded into the matching bone above them (the closest bone of the avatar when nothing above matches) by default, and its twist bones are dropped when the avatar has none. **Keep the extra bones** and **Keep twist bones** turn that off.
 - Every panel starts closed, except Updates and Credits. Panels no longer open with their parent.
 - Release files are named `katt-blender-plugin-vX.X.X.zip` and `katt-unity-plugin-vX.X.X.zip`.
-- The Optimize panel starts closed. Only Quick access, Updates and Credits start open.
+- The Optimize panel starts closed. 
 
 ## 0.2.2 - 2026-10-17
 

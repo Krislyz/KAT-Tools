@@ -50,7 +50,6 @@ class KAT_PT_main(bpy.types.Panel):
     bl_region_type = "UI"
     bl_category = "KAT"
     # No HIDE_HEADER: a header-less panel makes Blender move the whole KAT tab to the front of the tab list.
-    bl_options = {"DEFAULT_CLOSED"}
 
     def draw_header(self, context):
         self.layout.label(icon="OUTLINER_OB_ARMATURE")

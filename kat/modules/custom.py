@@ -47,6 +47,7 @@ def merge_rigs(context, base, other, attach_to="", similar=False, keep_extra=Tru
                 targets[bone.name] = min(deform, key=lambda b: (base.matrix_world @ b.head_local - here).length_squared).name
     folded = {}  # temporary name -> the bone of the base it goes into
     taken = {b.name for b in base.data.bones}
+    renamed = {}
     for bone in list(other.data.bones):  # clashing names would get .001 suffixes and break the vertex groups
         old = bone.name
         if old in targets:
@@ -54,7 +55,14 @@ def merge_rigs(context, base, other, attach_to="", similar=False, keep_extra=Tru
             folded[bone.name] = targets[old]
         elif old in taken:
             bone.name = f"{old}.{other.name}"
+        if bone.name != old:
+            renamed[old] = bone.name
         taken.add(bone.name)
+    for ob in armature.rigged_meshes(other):  # Blender renames the groups with the bones; make sure, whatever the mesh is like
+        for old, new in renamed.items():
+            group = ob.vertex_groups.get(old)
+            if group is not None and new not in ob.vertex_groups:
+                group.name = new
     roots = [b.name for b in other.data.bones if b.parent is None and b.name not in folded]
     count = len(other.data.bones) - len(folded)
     followers = [(ob, ob.matrix_world.copy(), ob.parent == other) for ob in armature.rigged_meshes(other)]
@@ -64,24 +72,17 @@ def merge_rigs(context, base, other, attach_to="", similar=False, keep_extra=Tru
         bpy.ops.object.join()
     for ob, world, was_child in followers:  # join leaves these pointing at the armature it deleted
         for mod in ob.modifiers:
-            if mod.type == "ARMATURE" and mod.object is None:
+            if mod.type == "ARMATURE" and (mod.object is None or mod.object == other):  # the join may leave the old pointer
                 mod.object = base
         if was_child:
             ob.parent = base
             ob.matrix_parent_inverse = base.matrix_world.inverted()
         ob.matrix_world = world
     if folded:
-        for ob in armature.meshes_of(base):  # weights of the folded bones go to the base bones
-            for name, into in folded.items():
-                group = ob.vertex_groups.get(name)
-                if group is None:
-                    continue
-                target = ob.vertex_groups.get(into) or ob.vertex_groups.new(name=into)
-                for v in ob.data.vertices:
-                    for g in v.groups:
-                        if g.group == group.index and g.weight > 0:
-                            target.add([v.index], g.weight, "ADD")
-                ob.vertex_groups.remove(group)
+        # weights of the folded bones go to the base bones: every mesh of the base, hidden ones too, and the outfit's own
+        # meshes whatever their modifier points at now
+        for ob in dict.fromkeys(armature.rigged_meshes(base) + [f[0] for f in followers]):
+            armature.move_weights(ob, folded)
 
         def fold(edit, _):
             for name, into in folded.items():

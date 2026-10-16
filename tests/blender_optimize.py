@@ -171,12 +171,23 @@ assert all(rig.data.bones[f"skirt_222_220{i}"].parent == root for i in (1, 2, 3)
 assert rig.data.bones["skirt_222_2201_end"].parent.name == "skirt_222_2201"
 assert total_weight() == before and optimize.categories(rig) == [], "a second run finds nothing new"
 
+# a hidden mesh keeps its weights too: they go to the parent, the bone goes
+target.vertex_groups["skirt_222_2203"].add([0], 0.75, "REPLACE")
+target.hide_viewport = True
+bpy.context.view_layer.update()
+assert not target.visible_get()
+assert optimize.merge_bones(bpy.context, rig, ["skirt_222_2203"]) == 1
+assert "skirt_222_2203" not in target.vertex_groups
+root_group = target.vertex_groups["skirt_root_222_220"]
+assert abs(root_group.weight(0) - 0.75) < 1e-5, "the hidden mesh's weight arrived"
+target.hide_viewport = False
+
 # the same from Edit mode: the selection there is the edit bones', and the armature is left in Edit mode
 bpy.ops.object.mode_set(mode="EDIT")
 for eb in rig.data.edit_bones:
-    eb.select = eb.name == "skirt_222_2203_end"
+    eb.select = eb.name == "skirt_222_2201_end"
 assert bpy.ops.kat.merge_bones() == {"FINISHED"}
-assert rig.mode == "EDIT" and "skirt_222_2203_end" not in rig.data.edit_bones
+assert rig.mode == "EDIT" and "skirt_222_2201_end" not in rig.data.edit_bones
 bpy.ops.object.mode_set(mode="OBJECT")
 
 kat.unregister()

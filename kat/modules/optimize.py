@@ -221,7 +221,7 @@ def merge_bones(context, rig, names, into="PARENT", keep=False, visible=False):
     """Move each bone's weights onto its parent (or onto the active bone), hand its children on, delete it. Deepest first.
     `keep` leaves the bones in place, `visible` leaves the weights of hidden meshes alone."""
     armature.check_ready(context, rig)
-    meshes = [m for m in armature.meshes_of(rig) if not visible or m.visible_get()]
+    meshes = [m for m in armature.rigged_meshes(rig) if not visible or m.visible_get()]  # hidden meshes keep their weights too
     bones = rig.data.bones
     active = bones.active.name if bones.active is not None and into == "ACTIVE" else ""
     if into == "ACTIVE" and not active:
@@ -238,18 +238,7 @@ def merge_bones(context, rig, names, into="PARENT", keep=False, visible=False):
             p = parent_of[p]
         moved[n] = p
     for ob in meshes:
-        index = {g.index: g.name for g in ob.vertex_groups}
-        adds = []
-        for v in ob.data.vertices:
-            for g in v.groups:
-                name = index.get(g.group)
-                if name in moved and moved[name] and g.weight > 0:
-                    adds.append((v.index, name, g.weight))
-        for vi, name, w in adds:
-            target = ob.vertex_groups.get(moved[name]) or ob.vertex_groups.new(name=moved[name])
-            target.add([vi], w, "ADD")
-        for name in {n for _, n, _ in adds}:
-            ob.vertex_groups.remove(ob.vertex_groups[name])
+        armature.move_weights(ob, moved)
     if keep:
         return len(doomed)
 

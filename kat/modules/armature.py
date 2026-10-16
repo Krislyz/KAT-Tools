@@ -33,6 +33,25 @@ def rigged_meshes(rig):
             if o.type == "MESH" and any(m.type == "ARMATURE" and m.object == rig for m in o.modifiers)]
 
 
+def move_weights(ob, moved):
+    """Add the weights of each vertex group in `moved` {name: target name} to its target (made when missing) and remove
+    the source groups. A group mapped to nothing is left alone. Returns the number of groups moved."""
+    index = {g.index: g.name for g in ob.vertex_groups}
+    adds = []
+    for v in ob.data.vertices:
+        for g in v.groups:
+            name = index.get(g.group)
+            if moved.get(name) and name != moved[name] and g.weight > 0:
+                adds.append((v.index, name, g.weight))
+    for vi, name, w in adds:
+        target = ob.vertex_groups.get(moved[name]) or ob.vertex_groups.new(name=moved[name])
+        target.add([vi], w, "ADD")
+    gone = {n for n in moved if moved[n] and n != moved[n] and n in ob.vertex_groups}  # empty groups go too
+    for name in gone:
+        ob.vertex_groups.remove(ob.vertex_groups[name])
+    return len(gone)
+
+
 def meshes_of(rig, scene=None):
     """Meshes rigged to `rig` that operators can actually work on: in the view layer and visible.
     (Meshes in excluded collections are not in the depsgraph and cannot be selected.)"""

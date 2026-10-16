@@ -104,7 +104,7 @@ class KAT_OT_install_update(bpy.types.Operator):
 class KAT_PT_updates(bpy.types.Panel):
     bl_label = "Updates"
     bl_idname = "KAT_PT_updates"
-    bl_order = 1001
+    bl_order = 1098  # just above Credits
     bl_space_type = "VIEW_3D"
     bl_region_type = "UI"
     bl_category = "KAT"  # open by default, like Quick access and Credits; every other panel starts closed

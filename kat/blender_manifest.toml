@@ -1,6 +1,6 @@
 schema_version = "1.0.0"
 id = "kat"
-version = "0.3.1"
+version = "0.3.2"
 name = "KAT Blender Plugin"
 tagline = "Avatar prep for VRChat and Unity, with version history"
 maintainer = "Krislyz"
